@@ -208,10 +208,22 @@
 
             <!-- Scrollable content area for modal inputs -->
             <div class="flex-grow overflow-y-auto pb-4"> <!-- Added flex-grow and overflow-y-auto -->
-                <!-- Chong Player Selection -->
-                <div id="chongPlayerSelectDiv" class="mb-4 hidden">
-                    <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">冲头:</label>
-                    <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+                
+                <!-- New flex container for Chong Player Select and Winner Selection -->
+                <div id="chongTopSection" class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4 hidden">
+                    <!-- Chong Player Selection -->
+                    <div id="chongPlayerSelectDiv" class="flex-1">
+                        <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">冲头:</label>
+                        <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+                    </div>
+
+                    <!-- Chong Winner Selection Buttons -->
+                    <div id="chongWinnerButtonsWrapper" class="flex-1">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">抓冲 (点击玩家姓名选择):</label>
+                        <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
+                            <!-- Selectable buttons for potential winners in Chong mode -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Common Inputs for Zimo/Sihuatongse (or single winner chong if applicable) -->
@@ -229,26 +241,26 @@
                         <!-- Flower Count Input -->
                         <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌<br>数量:</label> <!-- Forced 2 lines -->
-                            <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                            <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
                         </div>
 
                         <!-- Fan Count Input -->
                         <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label>
-                            <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                            <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
                         </div>
 
                         <!-- Multiplier Input -->
                         <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label>
-                            <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                            <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
                         </div>
                     </div>
 
                     <!-- Quantity Input for Sihuatongse -->
                     <div id="quantityDiv" class="mb-4 hidden">
                         <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">数量:</label>
-                        <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                        <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
                     </div>
 
                     <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
@@ -259,11 +271,7 @@
                 </div>
 
                 <!-- Chong Specific Inputs (Table Format) -->
-                <div id="chongWinnerScoringTableContainer" class="overflow-x-auto mb-4 hidden">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">抓冲 (点击玩家姓名选择):</label>
-                    <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2 mb-4">
-                        <!-- Selectable buttons for potential winners in Chong mode -->
-                    </div>
+                <div id="chongScoringTableOnlyContainer" class="overflow-x-auto mb-4 hidden">
                     <table class="score-table border-collapse border border-gray-300 rounded-lg">
                         <thead>
                             <tr class="bg-gray-100">
@@ -439,8 +447,13 @@
         const commonInputsContainer = document.getElementById('commonInputsContainer'); // Container for common inputs (Zimo/Sihuatongse)
         const commonWinnerLabel = document.getElementById('commonWinnerLabel'); // Label for winner selection in common container
         const winnerSelectionContainer = document.getElementById('winnerSelectionContainer'); // Player selection buttons for Zimo/Sihuatongse
+        
+        // New elements for Chong layout
+        const chongTopSection = document.getElementById('chongTopSection'); // New container for冲头 and 抓冲 selections
         const chongPlayerSelectDiv = document.getElementById('chongPlayerSelectDiv');
         const chongPlayerSelect = document.getElementById('chongPlayerSelect');
+        const chongWinnerButtonsWrapper = document.getElementById('chongWinnerButtonsWrapper'); // New wrapper for 抓冲 buttons and label
+
         const fanCountDiv = document.getElementById('fanCountDiv');
         const fanCountInput = document.getElementById('fanCount');
         const flowerCountDiv = document.getElementById('flowerCountDiv');
@@ -452,9 +465,12 @@
         const calculatedScoreLabel = document.getElementById('calculatedScoreLabel');
         const calculatedScoreDisplay = document.getElementById('calculatedScoreDisplay');
         const calculatedScoreDisplayContainer = document.getElementById('calculatedScoreDisplayContainer'); 
-        const chongWinnerScoringTableContainer = document.getElementById('chongWinnerScoringTableContainer'); // Container for Chong table
+        
+        // Renamed and re-purposed container for only the Chong table
+        const chongScoringTableOnlyContainer = document.getElementById('chongScoringTableOnlyContainer'); 
         const chongWinnerScoringTableBody = document.getElementById('chongWinnerScoringTableBody'); // Table body for Chong winners
         const chongWinnerSelectionButtons = document.getElementById('chongWinnerSelectionButtons'); // Selectable buttons for potential winners in Chong mode
+
         const cancelScoreBtn = document.getElementById('cancelScoreBtn');
         const confirmScoreBtn = document.getElementById('confirmScoreBtn');
 
@@ -1102,8 +1118,8 @@
 
             // Hide all specific sections first
             commonInputsContainer.classList.add('hidden');
-            chongPlayerSelectDiv.classList.add('hidden');
-            chongWinnerScoringTableContainer.classList.add('hidden');
+            chongTopSection.classList.add('hidden'); // Hide the new Chong top section
+            chongScoringTableOnlyContainer.classList.add('hidden'); // Hide the new Chong table container
             calculatedScoreDisplayContainer.classList.add('hidden'); // Hide global calculated display
             quantityDiv.classList.add('hidden'); // New: Hide quantity div by default
 
@@ -1127,8 +1143,8 @@
                 updateCalculatedScoreDisplay(); // Initial calculation
             } else if (mode === 'chong') {
                 modalTitle.textContent = '出冲结算';
-                chongPlayerSelectDiv.classList.remove('hidden'); // Show chong player select
-                chongWinnerScoringTableContainer.classList.remove('hidden'); // Show chong table
+                chongTopSection.classList.remove('hidden'); // Show the new Chong top section
+                chongScoringTableOnlyContainer.classList.remove('hidden'); // Show the new Chong table container
                 commonInputsContainer.classList.add('hidden'); // Hide common inputs for chong
                 quantityDiv.classList.add('hidden'); // Ensure hidden for chong
 
