@@ -216,20 +216,20 @@
 
                 <!-- Flower Count Input (Moved above Fan Count) -->
                 <div id="flowerCountDiv" class="mb-4">
-                    <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量 (Flower Count):</label>
-                    <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()">
+                    <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
+                    <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                 </div>
 
                 <!-- Fan Count Input -->
                 <div id="fanCountDiv" class="mb-4">
-                    <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (Fan Count):</label>
-                    <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()">
+                    <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label>
+                    <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                 </div>
 
                 <!-- Multiplier Input -->
                 <div id="multiplierDiv" class="mb-4">
-                    <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (Multiplier):</label>
-                    <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()">
+                    <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label>
+                    <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                 </div>
 
                 <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
@@ -926,6 +926,7 @@
                 flowerInput.dataset.playerName = player;
                 flowerInput.addEventListener('input', updateChongIndividualScore);
                 flowerInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                flowerInput.inputmode = 'numeric'; // Add this line
                 flowerTd.appendChild(flowerInput);
                 tr.appendChild(flowerTd);
 
@@ -939,6 +940,7 @@
                 fanInput.dataset.playerName = player;
                 fanInput.addEventListener('input', updateChongIndividualScore);
                 fanInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                fanInput.inputmode = 'numeric'; // Add this line
                 fanTd.appendChild(fanInput);
                 tr.appendChild(fanTd);
 
@@ -952,6 +954,7 @@
                 multiplierInput.dataset.playerName = player;
                 multiplierInput.addEventListener('input', updateChongIndividualScore);
                 multiplierInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                multiplierInput.inputmode = 'numeric'; // Add this line
                 multiplierTd.appendChild(multiplierInput);
                 tr.appendChild(multiplierTd);
 
@@ -1451,7 +1454,7 @@
             document.querySelectorAll('#pastGamesList .history-checkbox').forEach(checkbox => {
                 checkbox.checked = isChecked;
             });
-            updateDeleteButtonState(); // Update delete button state after select all
+            updateDeleteButtonState(); // Update button state after select all
         }
 
         // --- Delete Selected History Records ---
