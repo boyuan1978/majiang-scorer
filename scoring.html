@@ -472,7 +472,7 @@
         const confirmYesBtn = document.getElementById('confirmYesBtn');
         const confirmNoBtn = document.getElementById('confirmNoBtn');
 
-        // Removed Debug Info Modal elements
+        // Removed Debug Info Modal Functions
         // const debugModal = document.getElementById('debugModal');
         // const debugInfoContent = document.getElementById('debugInfoContent');
         // const closeDebugModalBtn = document.getElementById('closeDebugModalBtn');
@@ -1829,7 +1829,11 @@
                     // If user confirms, call confirmEndGameAndGoHome to finalize and redirect
                     confirmEndGameAndGoHome(); 
                 } else {
-                    console.log('User cancelled leaving from popstate. No further action needed as state was already re-pushed.');
+                    console.log('User cancelled leaving from popstate. Attempting to force forward navigation.');
+                    // User cancelled, so we want to stay on scoring.html.
+                    // history.pushState was already called at the start of popstate to "cancel" the back.
+                    // Now, explicitly try to move forward again to the current page.
+                    history.forward(); // This might force the browser back to scoring.html
                     showMessage('已取消返回主页。', 'info');
                 }
             } else {
