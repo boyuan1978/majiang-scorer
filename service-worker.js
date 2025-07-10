@@ -1,6 +1,6 @@
 // service-worker.js
 // 每次更新文件后，请更改 CACHE_NAME 的版本号，以确保 Service Worker 更新缓存
-const CACHE_NAME = 'mahjong-scorer-cache-v59'; // 版本号已从 v39 更改为 v40
+const CACHE_NAME = 'mahjong-scorer-cache-v60'; // 版本号已从 v39 更改为 v40
 const urlsToCache = [
     '/',
     '/index.html',

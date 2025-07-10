@@ -210,7 +210,7 @@
             <div class="flex-grow overflow-y-auto pb-4"> <!-- Added flex-grow and overflow-y-auto -->
                 <!-- Chong Player Selection -->
                 <div id="chongPlayerSelectDiv" class="mb-4 hidden">
-                    <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">出冲玩家:</label>
+                    <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">冲头:</label>
                     <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
                 </div>
 
@@ -260,7 +260,7 @@
 
                 <!-- Chong Specific Inputs (Table Format) -->
                 <div id="chongWinnerScoringTableContainer" class="overflow-x-auto mb-4 hidden">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">胡牌玩家详情 (点击玩家姓名选择):</label>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">抓冲 (点击玩家姓名选择):</label>
                     <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2 mb-4">
                         <!-- Selectable buttons for potential winners in Chong mode -->
                     </div>
@@ -949,6 +949,7 @@
                 flowerInput.addEventListener('input', updateChongIndividualScore);
                 flowerInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
                 flowerInput.inputmode = 'numeric'; // Add this line
+                flowerInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 flowerTd.appendChild(flowerInput);
                 tr.appendChild(flowerTd);
 
@@ -963,6 +964,7 @@
                 fanInput.addEventListener('input', updateChongIndividualScore);
                 fanInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
                 fanInput.inputmode = 'numeric'; // Add this line
+                fanInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 fanTd.appendChild(fanInput);
                 tr.appendChild(fanTd);
 
@@ -977,6 +979,7 @@
                 multiplierInput.addEventListener('input', updateChongIndividualScore);
                 multiplierInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
                 multiplierInput.inputmode = 'numeric'; // Add this line
+                multiplierInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 multiplierTd.appendChild(multiplierInput);
                 tr.appendChild(multiplierTd);
 
@@ -1234,7 +1237,7 @@
                     console.log('Chong: chongPlayer:', chongPlayer); // Debug log
 
                     if (!chongPlayer) {
-                        showMessage('请选择出冲玩家！', 'error');
+                        showMessage('请选择冲头！', 'error');
                         console.error('Chong: Validation failed: No chong player selected.');
                         return; // Exit early
                     }
@@ -1244,7 +1247,7 @@
                         return; // Exit early
                     }
                     if (selectedWinners.includes(chongPlayer)) {
-                        showMessage('胡牌玩家和出冲玩家不能是同一个人！', 'error');
+                        showMessage('胡牌玩家和冲头不能是同一个人！', 'error');
                         console.error('Chong: Validation failed: Winner and chong player are the same.');
                         return; // Exit early
                     }
