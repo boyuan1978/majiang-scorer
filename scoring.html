@@ -392,6 +392,7 @@
         let sihuaCount = 0;
         let mahjongGameHistoryArchive = []; // Stores summaries of all past games
         let currentActiveGameId = null; // Stores the ID of the game currently in progress
+        let wasHistoryModalVisible = false; // New flag to track history modal visibility
 
         // Temporary storage for individual winner data in Chong mode
         // Key: playerName, Value: { flower: number, fan: number, multiplier: number, calculatedScore: number }
@@ -506,8 +507,10 @@
                 confirmYesBtn.textContent = yesText; // Set custom text for Yes button
                 confirmNoBtn.textContent = noText;   // Set custom text for No button
                 
-                // 确保历史记录模态框在确认模态框显示时被隐藏
-                historyModal.classList.add('hidden'); 
+                // Track if historyModal was visible before showing confirmation
+                wasHistoryModalVisible = !historyModal.classList.contains('hidden');
+                historyModal.classList.add('hidden'); // Hide history modal if it's open
+                
                 confirmationModal.classList.remove('hidden');
                 
                 confirmPromiseResolve = resolve; // Store resolve for later use
@@ -524,9 +527,12 @@
 
         function hideCustomConfirmation() {
             confirmationModal.classList.add('hidden');
-            // 确认模态框隐藏后，重新显示历史记录模态框
-            historyModal.classList.remove('hidden'); 
+            // Only re-show history modal if it was visible before confirmation
+            if (wasHistoryModalVisible) {
+                historyModal.classList.remove('hidden'); 
+            }
             confirmPromiseResolve = null; // Clear the resolve function
+            wasHistoryModalVisible = false; // Reset flag
         }
 
         function handleConfirmYes() {
