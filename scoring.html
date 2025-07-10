@@ -1811,9 +1811,12 @@
             // Check if we are trying to navigate away from scoring.html
             // And if the current game is in progress (activePlayers.length > 0)
             if (activePlayers.length > 0 && currentActiveGameId !== null) {
-                // Do NOT re-push state immediately here. Let the modal handle the decision.
-                console.log('Active game detected during popstate. Showing confirmation.');
-
+                console.log('Active game detected during popstate. Immediately pushing state back to prevent default navigation.');
+                // Immediately push the current state back onto the history stack.
+                // This effectively "cancels" the browser's back navigation.
+                history.pushState({ page: 'scoring' }, '', 'scoring.html');
+                
+                console.log('Showing confirmation modal after re-pushing state.');
                 const confirmLeave = await showCustomConfirmation(
                     '结束当前牌局？',
                     '检测到未完成的牌局，您确定要结束并返回主页吗？',
@@ -1826,10 +1829,7 @@
                     // If user confirms, call confirmEndGameAndGoHome to finalize and redirect
                     confirmEndGameAndGoHome(); 
                 } else {
-                    console.log('User cancelled leaving from popstate. Re-pushing state to stay on current page.');
-                    // If user cancels, push the current state back onto the history stack
-                    // to prevent the browser from actually navigating back.
-                    history.pushState({ page: 'scoring' }, '', 'scoring.html');
+                    console.log('User cancelled leaving from popstate. No further action needed as state was already re-pushed.');
                     showMessage('已取消返回主页。', 'info');
                 }
             } else {
