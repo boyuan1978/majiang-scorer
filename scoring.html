@@ -127,6 +127,11 @@
             max-height: 60vh; /* Limit height for scroll */
             overflow-y: auto;
         }
+
+        /* For Chong table player name wrapping */
+        .score-table td:first-child { /* Target the first column (player name) */
+            word-break: break-word; /* Break long words */
+        }
     </style>
     <!-- PWA Manifest file -->
     <link rel="manifest" href="/manifest.json">
@@ -198,78 +203,80 @@
         <div class="modal-content">
             <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-gray-800 text-center"></h3>
 
-            <!-- Chong Player Selection -->
-            <div id="chongPlayerSelectDiv" class="mb-4 hidden">
-                <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">出冲玩家:</label>
-                <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+            <!-- Scrollable content area for modal inputs -->
+            <div class="flex-grow overflow-y-auto pb-4"> <!-- Added flex-grow and overflow-y-auto -->
+                <!-- Chong Player Selection -->
+                <div id="chongPlayerSelectDiv" class="mb-4 hidden">
+                    <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">出冲玩家:</label>
+                    <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+                </div>
+
+                <!-- Common Inputs for Zimo/Sihuatongse (or single winner chong if applicable) -->
+                <div id="commonInputsContainer">
+                    <!-- Winner Player Selection (Clickable Buttons) - for Zimo/Sihuatongse -->
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" id="commonWinnerLabel">胡牌玩家 (点击选择):</label>
+                        <div id="winnerSelectionContainer" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
+                            <!-- Player selection buttons will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <!-- Group for Flower, Fan, Multiplier -->
+                    <div class="flex flex-wrap justify-between gap-4 mb-4 items-start"> <!-- Added items-start for label alignment -->
+                        <!-- Flower Count Input -->
+                        <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                            <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
+                            <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                        </div>
+
+                        <!-- Fan Count Input -->
+                        <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                            <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label> <!-- Removed <br> -->
+                            <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                        </div>
+
+                        <!-- Multiplier Input -->
+                        <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                            <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label> <!-- Removed <br> -->
+                            <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                        </div>
+                    </div>
+
+                    <!-- Quantity Input for Sihuatongse -->
+                    <div id="quantityDiv" class="mb-4 hidden">
+                        <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">数量:</label>
+                        <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                    </div>
+
+                    <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
+                    <div class="mb-6 p-3 bg-gray-100 rounded-lg text-center" id="calculatedScoreDisplayContainer">
+                        <p class="text-gray-700 text-sm mb-1" id="calculatedScoreLabel">预计每位输家支付:</p>
+                        <p id="calculatedScoreDisplay" class="text-2xl font-bold text-blue-700">0</p>
+                    </div>
+                </div>
+
+                <!-- Chong Specific Inputs (Table Format) -->
+                <div id="chongWinnerScoringTableContainer" class="overflow-x-auto mb-4 hidden">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">胡牌玩家详情 (点击玩家姓名选择):</label>
+                    <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2 mb-4">
+                        <!-- Selectable buttons for potential winners in Chong mode -->
+                    </div>
+                    <table class="score-table border-collapse border border-gray-300 rounded-lg">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-1 border-b border-gray-300 rounded-tl-lg">胡牌玩家</th>
+                                <th class="py-2 px-1 border-b border-gray-300">花数</th>
+                                <th class="py-2 px-1 border-b border-gray-300">番数</th>
+                                <th class="py-2 px-1 border-b border-gray-300">翻倍</th>
+                                <th class="py-2 px-1 border-b border-gray-300 rounded-tr-lg">分值</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chongWinnerScoringTableBody">
+                            <!-- Dynamic rows for each selected winner -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
-            <!-- Common Inputs for Zimo/Sihuatongse (or single winner chong if applicable) -->
-            <div id="commonInputsContainer">
-                <!-- Winner Player Selection (Clickable Buttons) - for Zimo/Sihuatongse -->
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" id="commonWinnerLabel">胡牌玩家 (点击选择):</label>
-                    <div id="winnerSelectionContainer" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
-                        <!-- Player selection buttons will be dynamically added here -->
-                    </div>
-                </div>
-
-                <!-- Group for Flower, Fan, Multiplier -->
-                <div class="flex flex-wrap justify-between gap-4 mb-4">
-                    <!-- Flower Count Input -->
-                    <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                        <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
-                        <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
-                    </div>
-
-                    <!-- Fan Count Input -->
-                    <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                        <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 <br>(原数*2**番数):</label>
-                        <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
-                    </div>
-
-                    <!-- Multiplier Input -->
-                    <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                        <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 <br>(原数*(倍数+1)):</label>
-                        <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
-                    </div>
-                </div>
-
-                <!-- Quantity Input for Sihuatongse -->
-                <div id="quantityDiv" class="mb-4 hidden">
-                    <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">数量:</label>
-                    <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
-                </div>
-
-                <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
-                <div class="mb-6 p-3 bg-gray-100 rounded-lg text-center" id="calculatedScoreDisplayContainer">
-                    <p class="text-gray-700 text-sm mb-1" id="calculatedScoreLabel">预计每位输家支付:</p>
-                    <p id="calculatedScoreDisplay" class="text-2xl font-bold text-blue-700">0</p>
-                </div>
-            </div>
-
-            <!-- Chong Specific Inputs (Table Format) -->
-            <div id="chongWinnerScoringTableContainer" class="overflow-x-auto mb-4 hidden">
-                <label class="block text-gray-700 text-sm font-bold mb-2">胡牌玩家详情 (点击玩家姓名选择):</label>
-                <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2 mb-4">
-                    <!-- Selectable buttons for potential winners in Chong mode -->
-                </div>
-                <table class="score-table border-collapse border border-gray-300 rounded-lg">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="py-2 px-1 border-b border-gray-300 rounded-tl-lg">胡牌玩家</th>
-                            <th class="py-2 px-1 border-b border-gray-300">花数</th>
-                            <th class="py-2 px-1 border-b border-gray-300">番数</th>
-                            <th class="py-2 px-1 border-b border-gray-300">翻倍</th>
-                            <th class="py-2 px-1 border-b border-gray-300 rounded-tr-lg">分值</th>
-                        </tr>
-                    </thead>
-                    <tbody id="chongWinnerScoringTableBody">
-                        <!-- Dynamic rows for each selected winner -->
-                    </tbody>
-                </table>
-            </div>
-
 
             <div class="flex justify-end space-x-4">
                 <button id="cancelScoreBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">取消</button>
