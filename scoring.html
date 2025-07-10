@@ -214,22 +214,31 @@
                     </div>
                 </div>
 
-                <!-- Flower Count Input (Moved above Fan Count) -->
-                <div id="flowerCountDiv" class="mb-4">
-                    <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
-                    <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                <!-- Group for Flower, Fan, Multiplier -->
+                <div class="flex flex-wrap justify-between gap-4 mb-4">
+                    <!-- Flower Count Input -->
+                    <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                        <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
+                        <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                    </div>
+
+                    <!-- Fan Count Input -->
+                    <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                        <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 <br>(原数*2**番数):</label>
+                        <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                    </div>
+
+                    <!-- Multiplier Input -->
+                    <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
+                        <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 <br>(原数*(倍数+1)):</label>
+                        <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                    </div>
                 </div>
 
-                <!-- Fan Count Input -->
-                <div id="fanCountDiv" class="mb-4">
-                    <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label>
-                    <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
-                </div>
-
-                <!-- Multiplier Input -->
-                <div id="multiplierDiv" class="mb-4">
-                    <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label>
-                    <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
+                <!-- Quantity Input for Sihuatongse -->
+                <div id="quantityDiv" class="mb-4 hidden">
+                    <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">数量:</label>
+                    <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                 </div>
 
                 <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
@@ -428,6 +437,8 @@
         const flowerCountInput = document.getElementById('flowerCount');
         const multiplierDiv = document = document.getElementById('multiplierDiv');
         const multiplierInput = document.getElementById('multiplier');
+        const quantityDiv = document.getElementById('quantityDiv'); // New: Quantity Div
+        const quantityInput = document.getElementById('quantity'); // New: Quantity Input
         const calculatedScoreLabel = document.getElementById('calculatedScoreLabel');
         const calculatedScoreDisplay = document.getElementById('calculatedScoreDisplay');
         const calculatedScoreDisplayContainer = document.getElementById('calculatedScoreDisplayContainer'); 
@@ -1036,7 +1047,8 @@
             } else if (currentScoreMode === 'sihuatongse') {
                 calculatedScoreDisplayContainer.classList.remove('hidden');
                 const laziScore = currentSettings.laziScore;
-                const paymentPerLoserToEachWinner = laziScore / 2;
+                const quantity = parseInt(quantityInput.value) || 1; // Get quantity
+                const paymentPerLoserToEachWinner = (laziScore / 2) * quantity;
                 calculatedScoreLabel.textContent = '预计每位输家支付给每位胡牌玩家:';
                 calculatedScoreDisplay.textContent = paymentPerLoserToEachWinner;
             } else {
@@ -1052,6 +1064,7 @@
             fanCountInput.value = 0;
             flowerCountInput.value = 0;
             multiplierInput.value = 0;
+            quantityInput.value = 1; // Reset quantity to 1
 
             // Reset all player selection button visual states for commonInputsContainer
             document.querySelectorAll('#winnerSelectionContainer .player-selection-item').forEach(btn => {
@@ -1069,6 +1082,7 @@
             fanCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            quantityInput.removeEventListener('input', updateCalculatedScoreDisplay); // New: remove quantity listener
             chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
 
 
@@ -1077,6 +1091,7 @@
             chongPlayerSelectDiv.classList.add('hidden');
             chongWinnerScoringTableContainer.classList.add('hidden');
             calculatedScoreDisplayContainer.classList.add('hidden'); // Hide global calculated display
+            quantityDiv.classList.add('hidden'); // New: Hide quantity div by default
 
             if (mode === 'zimo') {
                 modalTitle.textContent = '自摸结算';
@@ -1085,6 +1100,7 @@
                 fanCountDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
                 flowerCountDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
                 multiplierDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
+                quantityDiv.classList.add('hidden'); // Ensure hidden for zimo
 
                 calculatedScoreDisplayContainer.classList.remove('hidden'); // Show global calculated display
                 calculatedScoreLabel.textContent = '预计每位输家支付:'; // Label for Zimo
@@ -1099,6 +1115,8 @@
                 modalTitle.textContent = '出冲结算';
                 chongPlayerSelectDiv.classList.remove('hidden'); // Show chong player select
                 chongWinnerScoringTableContainer.classList.remove('hidden'); // Show chong table
+                commonInputsContainer.classList.add('hidden'); // Hide common inputs for chong
+                quantityDiv.classList.add('hidden'); // Ensure hidden for chong
 
                 populateChongPlayerSelectOptions(); // Populate chong player select first
                 chongPlayerSelect.addEventListener('change', handleChongPlayerChange); // Add listener for chong player change
@@ -1112,10 +1130,13 @@
                 fanCountDiv.classList.add('hidden'); // Four flowers same color doesn't involve fan count
                 flowerCountDiv.classList.add('hidden'); // Four flowers same color doesn't involve flower count
                 multiplierDiv.classList.add('hidden'); // Four flowers same color doesn't involve multiplier
+                quantityDiv.classList.remove('hidden'); // Show quantity for sihuatongse
+
                 calculatedScoreDisplayContainer.classList.remove('hidden'); // Show global calculated display for Sihuatongse
                 commonWinnerLabel.textContent = '四花同色玩家 (点击选择):'; // Label for Sihuatongse winner selection
 
                 renderPlayerSelectionButtons(winnerSelectionContainer); // Render all player buttons for multi-selection
+                quantityInput.addEventListener('input', updateCalculatedScoreDisplay); // New: Add listener for quantity
                 updateCalculatedScoreDisplay(); // Initial calculation for Sihuatongse (using the unified function)
             }
             scoreModal.classList.remove('hidden');
@@ -1129,6 +1150,7 @@
             fanCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            quantityInput.removeEventListener('input', updateCalculatedScoreDisplay); // New: remove quantity listener
             chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
 
             // Clear chongIndividualWinnerData on modal close
@@ -1146,6 +1168,7 @@
             let fanCount = 0;
             let flowerCount = 0;
             let multiplier = 0;
+            let quantity = 0; // New: quantity variable
             let chongPlayer = null;
 
             try {
@@ -1245,7 +1268,7 @@
                 } else if (currentScoreMode === 'sihuatongse') {
                     selectedWinners = Array.from(document.querySelectorAll('#winnerSelectionContainer .player-selection-item.selected'))
                                         .map(btn => btn.dataset.playerName);
-                    console.log('Sihuatongse: selectedWinners:', selectedWinners); // Debug log
+                    console.log('Sihuatongse: selectedWinners:', selectedWinners);
                                         
                     if (selectedWinners.length === 0) {
                         showMessage('四花同色请选择至少一位胡牌玩家！', 'error');
@@ -1254,7 +1277,7 @@
                     }
 
                     const losers = activePlayers.filter(p => !selectedWinners.includes(p));
-                    console.log('Sihuatongse: losers:', losers); // Debug log
+                    console.log('Sihuatongse: losers:', losers);
                     
                     if (losers.length === 0) {
                         showMessage('四花同色至少需要一位非胡牌玩家来支付。', 'error');
@@ -1263,7 +1286,14 @@
                     }
 
                     const laziScore = currentSettings.laziScore;
-                    const paymentPerLoserToEachWinner = laziScore / 2; // Each loser pays half lazi to *each* winner
+                    quantity = parseInt(quantityInput.value) || 1; // Get quantity
+                    if (quantity < 1) { // Validate quantity
+                         showMessage('四花同色数量不能小于1！', 'error');
+                         console.error('Sihuatongse: Validation failed: Quantity less than 1.');
+                         return;
+                    }
+
+                    const paymentPerLoserToEachWinner = (laziScore / 2) * quantity; // Updated calculation
 
                     selectedWinners.forEach(winner => {
                         losers.forEach(loser => {
@@ -1297,6 +1327,7 @@
                         fan: currentScoreMode === 'zimo' ? fanCount : null, 
                         flower: currentScoreMode === 'zimo' ? flowerCount : null, 
                         multiplier: currentScoreMode === 'zimo' ? multiplier : null, 
+                        quantity: currentScoreMode === 'sihuatongse' ? quantity : null, // Add quantity
                         changes: { ...roundChanges }
                     });
                     console.log('Added round to gameRoundHistory:', gameRoundHistory[gameRoundHistory.length - 1]); // Added log
@@ -1494,7 +1525,7 @@
                     // Save updated archive to localStorage
                     localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
                     const storedDataAfterDelete = localStorage.getItem('mahjongGameHistoryArchive');
-                    console.log('6. localStorage content immediately after deletion save:', storedDataAfterDelete);
+                    console.log('6. localStorage content immediately after deletion save:', storedDataAfterSave);
                     if (storedDataAfterDelete === JSON.stringify(mahjongGameHistoryArchive)) {
                         console.log('7. localStorage write verified: Data matches in-memory archive after deletion.');
                     } else {
@@ -1586,11 +1617,15 @@
             // Populate table body with round data (in reverse order)
             gameSummary.detailedHistory.slice().reverse().forEach(round => {
                 const tr = document.createElement('tr');
+                let winnerDisplay = Array.isArray(round.winners) ? round.winners.join(', ') : round.winners;
+                let chongPlayerDisplay = round.chongPlayer || '-';
+                let quantityDisplay = round.mode === 'sihuatongse' && round.quantity !== null ? ` (x${round.quantity})` : '';
+
                 tr.innerHTML = `
                     <td>${round.roundNum}</td>
                     <td>${getModeDisplayName(round.mode)}</td>
-                    <td>${Array.isArray(round.winners) ? round.winners.join(', ') : round.winners}</td>
-                    <td>${round.chongPlayer || '-'}</td>
+                    <td>${winnerDisplay}${quantityDisplay}</td>
+                    <td>${chongPlayerDisplay}</td>
                 `;
                 gameSummary.activePlayersAtEnd.forEach(player => { // Use active players from this specific game summary
                     const change = round.changes[player] !== undefined ? round.changes[player] : 0;
@@ -1646,10 +1681,11 @@
             for (let i = gameRoundHistory.length - 1; i >= 0; i--) {
                 const round = gameRoundHistory[i];
                 const tr = document.createElement('tr');
+                let quantityDisplay = round.mode === 'sihuatongse' && round.quantity !== null ? ` (x${round.quantity})` : '';
                 tr.innerHTML = `
                     <td>${round.roundNum}</td>
                     <td>${getModeDisplayName(round.mode)}</td>
-                    <td>${Array.isArray(round.winners) ? round.winners.join(', ') : round.winners}</td>
+                    <td>${Array.isArray(round.winners) ? round.winners.join(', ') : round.winners}${quantityDisplay}</td>
                     <td>${round.chongPlayer || '-'}</td>
                 `;
                 activePlayers.forEach(player => {
