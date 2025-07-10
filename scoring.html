@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻将记分 - 记分中</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 设置 Inter 字体 -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+        /* Modal overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        /* Modal content */
+        .modal-content {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            max-height: 90vh; /* Limit modal max height */
+            min-height: 250px; /* Added: Ensure a minimum height for all modals */
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack children vertically */
+        }
+        /* Battle summary modal content, potentially wider */
+        .battle-summary-modal-content {
+            max-width: 600px; /* Battle summary might need to be wider */
+            min-height: 400px; /* Added: Ensure sufficient height for history/query modals */
+        }
+        /* Table styles */
+        .score-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .score-table th, .score-table td {
+            border: 1px solid #e2e8f0; /* Tailwind gray-200 */
+            padding: 0.5rem;
+            text-align: center;
+        }
+        .score-table th {
+            background-color: #edf2f7; /* Tailwind gray-200 */
+            font-weight: bold;
+        }
+        /* Player selection button style */
+        .player-selection-item {
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+            border: 1px solid #cbd5e0; /* Add border for better visual separation */
+        }
+        .player-selection-item.selected {
+            background-color: #3B82F6; /* Tailwind blue-500 */
+            color: white;
+            border-color: #3B82F6; /* Match border color */
+        }
+        .player-selection-item.selected:hover {
+            background-color: #2563EB; /* Tailwind blue-600 */
+            border-color: #2563EB;
+        }
+        /* Input fields within table cells */
+        .score-table input[type="number"] {
+            width: 100%;
+            padding: 0.25rem;
+            text-align: center;
+            border: 1px solid #cbd5e0; /* Tailwind gray-300 */
+            border-radius: 0.25rem;
+            background-color: #f8fafc; /* Tailwind gray-50 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* Subtle inner shadow */
+        }
+        .score-table td {
+            vertical-align: middle; /* Center content vertically in table cells */
+        }
+        /* Style for history list items */
+        .history-list-item {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex; /* Use flex to align checkbox and content */
+            align-items: center; /* Vertically center items */
+            gap: 10px; /* Space between checkbox and text */
+        }
+        .history-list-item:hover {
+            background-color: #e2e8f0;
+        }
+
+        /* Sticky header for tables within modals */
+        .table-scroll-container {
+            flex-grow: 1; /* Allow content to take available space */
+            overflow-y: auto; /* Enable vertical scrolling for the table content */
+            margin-bottom: 1rem; /* Space between table and footer button */
+            min-height: 150px; /* Added: Ensure space even with little content */
+        }
+        .score-table thead {
+            position: sticky;
+            top: 0;
+            background-color: #edf2f7; /* Match original header background */
+            z-index: 10; /* Ensure it stays above scrolling content */
+        }
+
+        /* Style for debug info preformatted text */
+        #debugInfoContent {
+            white-space: pre-wrap; /* Preserve whitespace and wrap text */
+            word-break: break-all; /* Break long words */
+            font-family: 'Courier New', monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 60vh; /* Limit height for scroll */
+            overflow-y: auto;
+        }
+    </style>
+    <!-- PWA Manifest file -->
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">麻将记分</h1>
+
+        <!-- Current Game Settings Overview -->
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4 text-blue-800">当前游戏设置</h2>
+            <div class="flex flex-wrap justify-center gap-x-4">
+                <p class="text-gray-700 mb-2"><span class="font-bold">底分:</span> <span id="displayBaseScore"></span></p>
+                <p class="text-700 mb-2"><span class="font-bold">花分:</span> <span id="displayFlowerScore"></span></p>
+                <p class="text-gray-700 mb-2"><span class="font-bold">辣子:</span> <span id="displayLaziScore"></span></p>
+            </div>
+        </div>
+
+        <!-- Current Round Status/Operations Area -->
+        <div class="mb-6 bg-purple-50 p-4 rounded-lg text-center">
+            <h2 class="text-xl font-semibold mb-4 text-purple-800">本局战况</h2>
+            <div class="flex flex-wrap justify-around gap-4">
+                <button id="zimoBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                    自摸
+                </button>
+                <button id="chongBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                    出冲
+                </button>
+                <button id="sihuatongseBtn" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                    四花同色
+                </button>
+            </div>
+        </div>
+
+        <!-- Player Scores Overview and Last Round Changes Display Area -->
+        <div class="bg-yellow-50 p-4 rounded-lg w-full">
+            <h2 class="text-xl font-semibold mb-4 text-yellow-800 text-center">玩家分数概览</h2>
+            <div class="grid grid-cols-4 gap-2 text-center font-bold text-gray-700 mb-2">
+                <div>玩家</div>
+                <div>初始分</div> <!-- New column header -->
+                <div>上局变化</div>
+                <div>总分</div>
+            </div>
+            <div id="totalScoresGrid" class="grid grid-cols-4 gap-2 text-center">
+                <!-- Player total scores and last round changes will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Bottom Function Buttons Area -->
+        <div class="flex flex-wrap justify-around gap-4 mt-6">
+            <button id="historyBtn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                历史记录
+            </button>
+            <button id="queryBattleBtn" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                查询战况
+            </button>
+            <button id="endGameBtn" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105 min-w-[100px]">
+                结束战斗
+            </button>
+            <!-- Removed Debug Info Button -->
+        </div>
+
+        <!-- Message Box -->
+        <div id="messageBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center" role="alert"></div>
+    </div>
+
+    <!-- Modal Container - Scoring Operations -->
+    <div id="scoreModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modalTitle" class="text-2xl font-bold mb-4 text-gray-800 text-center"></h3>
+
+            <!-- Chong Player Selection -->
+            <div id="chongPlayerSelectDiv" class="mb-4 hidden">
+                <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">出冲玩家:</label>
+                <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+            </div>
+
+            <!-- Common Inputs for Zimo/Sihuatongse (or single winner chong if applicable) -->
+            <div id="commonInputsContainer">
+                <!-- Winner Player Selection (Clickable Buttons) - for Zimo/Sihuatongse -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" id="commonWinnerLabel">胡牌玩家 (点击选择):</label>
+                    <div id="winnerSelectionContainer" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
+                        <!-- Player selection buttons will be dynamically added here -->
+                    </div>
+                </div>
+
+                <!-- Flower Count Input (Moved above Fan Count) -->
+                <div id="flowerCountDiv" class="mb-4">
+                    <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量 (Flower Count):</label>
+                    <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+                </div>
+
+                <!-- Fan Count Input -->
+                <div id="fanCountDiv" class="mb-4">
+                    <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (Fan Count):</label>
+                    <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+                </div>
+
+                <!-- Multiplier Input -->
+                <div id="multiplierDiv" class="mb-4">
+                    <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (Multiplier):</label>
+                    <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+                </div>
+
+                <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
+                <div class="mb-6 p-3 bg-gray-100 rounded-lg text-center" id="calculatedScoreDisplayContainer">
+                    <p class="text-gray-700 text-sm mb-1" id="calculatedScoreLabel">预计每位输家支付:</p>
+                    <p id="calculatedScoreDisplay" class="text-2xl font-bold text-blue-700">0</p>
+                </div>
+            </div>
+
+            <!-- Chong Specific Inputs (Table Format) -->
+            <div id="chongWinnerScoringTableContainer" class="overflow-x-auto mb-4 hidden">
+                <label class="block text-gray-700 text-sm font-bold mb-2">胡牌玩家详情 (点击玩家姓名选择):</label>
+                <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2 mb-4">
+                    <!-- Selectable buttons for potential winners in Chong mode -->
+                </div>
+                <table class="score-table border-collapse border border-gray-300 rounded-lg">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="py-2 px-1 border-b border-gray-300 rounded-tl-lg">胡牌玩家</th>
+                            <th class="py-2 px-1 border-b border-gray-300">花数</th>
+                            <th class="py-2 px-1 border-b border-gray-300">番数</th>
+                            <th class="py-2 px-1 border-b border-gray-300">翻倍</th>
+                            <th class="py-2 px-1 border-b border-gray-300 rounded-tr-lg">分值</th>
+                        </tr>
+                    </thead>
+                    <tbody id="chongWinnerScoringTableBody">
+                        <!-- Dynamic rows for each selected winner -->
+                    </tbody>
+                </table>
+            </div>
+
+
+            <div class="flex justify-end space-x-4">
+                <button id="cancelScoreBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">取消</button>
+                <button id="confirmScoreBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">确认结算</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container - Query Battle -->
+    <div id="queryBattleModal" class="modal-overlay hidden">
+        <div class="modal-content battle-summary-modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">本局战况详情</h3>
+            <div id="roundHistoryTableContainer" class="table-scroll-container" style="max-height: calc(90vh - 150px);">
+                <table class="score-table">
+                    <thead class="sticky-header">
+                        <tr>
+                            <th>局数</th>
+                            <th>类型</th>
+                            <th>胡牌玩家</th>
+                            <th>出冲玩家</th>
+                            <!-- Dynamic player name columns -->
+                        </tr>
+                    </thead>
+                    <tbody id="roundHistoryTableBody">
+                        <!-- Round history will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button id="closeQueryBattleModalBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container - History Records (List of past games) -->
+    <div id="historyModal" class="modal-overlay hidden">
+        <div class="modal-content battle-summary-modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">历史记录</h3>
+            <div class="flex items-center justify-between mb-4">
+                <label class="flex items-center space-x-2">
+                    <input type="checkbox" id="selectAllHistoryCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                    <span class="text-gray-700 font-medium">全选</span>
+                </label>
+                <button id="deleteSelectedHistoryBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200" disabled>
+                    删除选中记录
+                </button>
+            </div>
+            <div id="pastGamesList" class="space-y-4 table-scroll-container" style="max-height: calc(90vh - 180px);">
+                <!-- Past game summaries will be displayed here as clickable items -->
+            </div>
+            <div class="flex justify-end mt-4">
+                <button id="closeHistoryModalBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container - Detailed Game History (When clicking a history item) -->
+    <div id="detailedHistoryModal" class="modal-overlay hidden">
+        <div class="modal-content battle-summary-modal-content">
+            <h3 id="detailedHistoryTitle" class="text-2xl font-bold mb-4 text-gray-800 text-center"></h3>
+            
+            <!-- Round-by-round history for this specific game -->
+            <div class="mb-4">
+                <p class="text-lg font-semibold mb-2 text-gray-700">局数详情:</p>
+                <div id="detailedRoundHistoryContainer" class="table-scroll-container" style="max-height: calc(90vh - 200px);">
+                    <table class="score-table">
+                        <thead class="sticky-header">
+                            <tr id="detailedRoundHistoryHeader">
+                                <!-- Dynamic player name columns -->
+                            </tr>
+                        </thead>
+                        <tbody id="detailedRoundHistoryBody">
+                            <!-- Round history will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-4">
+                <button id="closeDetailedHistoryModalBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container - End Game -->
+    <div id="endGameModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-gray-800 text-center">战斗结束！</h3>
+            <p class="text-lg font-semibold mb-2 text-gray-700">最终总分:</p>
+            <ul id="finalScoresList" class="list-none p-0 m-0 mb-4">
+                <!-- Final scores will be displayed here -->
+            </ul>
+            <p class="text-lg font-semibold mb-2 text-gray-700">本局统计:</p>
+            <ul class="list-none p-0 m-0 mb-6">
+                <li class="flex justify-between py-1 px-2 text-gray-700"><span class="font-bold">自摸次数:</span> <span id="finalZimoCount">0</span></li>
+                <li class="flex justify-between py-1 px-2 text-gray-700"><span class="font-bold">出冲次数:</span> <span id="finalChongCount">0</span></li>
+                <li class="flex justify-between py-1 px-2 text-gray-700"><span class="font-bold">四花同色次数:</span> <span id="finalSihuaCount">0</span></li>
+            </ul>
+            <div class="flex justify-end space-x-4">
+                <button id="confirmEndGameBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">确认并返回主页</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay hidden" style="z-index: 1001;">
+        <div class="modal-content">
+            <h3 id="confirmationModalTitle" class="text-2xl font-bold mb-4 text-gray-800 text-center"></h3>
+            <p id="confirmationModalMessage" class="text-gray-700 text-center mb-6"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirmYesBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">是</button>
+                <button id="confirmNoBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">否</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed Debug Info Modal -->
+
+
+    <script>
+        // Global data storage
+        let currentSettings = {};
+        let activePlayers = [];
+        let playerScores = {}; // Stores total score for each player
+        let lastRoundChanges = {}; // Stores score changes from the last round
+        let gameRoundHistory = []; // Stores detailed records of each game round
+        let zimoCount = 0;
+        let chongCount = 0;
+        let sihuaCount = 0;
+        let mahjongGameHistoryArchive = []; // Stores summaries of all past games
+        let currentActiveGameId = null; // Stores the ID of the game currently in progress
+
+        // Temporary storage for individual winner data in Chong mode
+        // Key: playerName, Value: { flower: number, fan: number, multiplier: number, calculatedScore: number }
+        let chongIndividualWinnerData = {}; 
+
+        // Get DOM elements
+        const displayBaseScore = document.getElementById('displayBaseScore');
+        const displayFlowerScore = document.getElementById('displayFlowerScore');
+        const displayLaziScore = document.getElementById('displayLaziScore');
+        const zimoBtn = document.getElementById('zimoBtn');
+        const chongBtn = document.getElementById('chongBtn');
+        const sihuatongseBtn = document.getElementById('sihuatongseBtn');
+        const totalScoresGrid = document.getElementById('totalScoresGrid');
+        const messageBox = document.getElementById('messageBox');
+
+        // Bottom function buttons
+        const historyBtn = document.getElementById('historyBtn');
+        const queryBattleBtn = document.getElementById('queryBattleBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        // Removed debugInfoBtn reference
+
+        // Modal elements - Scoring operations
+        const scoreModal = document.getElementById('scoreModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const commonInputsContainer = document.getElementById('commonInputsContainer'); // Container for common inputs (Zimo/Sihuatongse)
+        const commonWinnerLabel = document.getElementById('commonWinnerLabel'); // Label for winner selection in common container
+        const winnerSelectionContainer = document.getElementById('winnerSelectionContainer'); // Player selection buttons for Zimo/Sihuatongse
+        const chongPlayerSelectDiv = document.getElementById('chongPlayerSelectDiv');
+        const chongPlayerSelect = document.getElementById('chongPlayerSelect');
+        const fanCountDiv = document.getElementById('fanCountDiv');
+        const fanCountInput = document.getElementById('fanCount');
+        const flowerCountDiv = document.getElementById('flowerCountDiv');
+        const flowerCountInput = document.getElementById('flowerCount');
+        const multiplierDiv = document.getElementById('multiplierDiv');
+        const multiplierInput = document.getElementById('multiplier');
+        const calculatedScoreLabel = document.getElementById('calculatedScoreLabel');
+        const calculatedScoreDisplay = document.getElementById('calculatedScoreDisplay');
+        const calculatedScoreDisplayContainer = document.getElementById('calculatedScoreDisplayContainer'); 
+        const chongWinnerScoringTableContainer = document.getElementById('chongWinnerScoringTableContainer'); // Container for Chong table
+        const chongWinnerScoringTableBody = document.getElementById('chongWinnerScoringTableBody'); // Table body for Chong winners
+        const chongWinnerSelectionButtons = document.getElementById('chongWinnerSelectionButtons'); // Selectable buttons for potential winners in Chong mode
+        const cancelScoreBtn = document.getElementById('cancelScoreBtn');
+        const confirmScoreBtn = document.getElementById('confirmScoreBtn');
+
+        // Modal elements - Query battle
+        const queryBattleModal = document.getElementById('queryBattleModal');
+        const roundHistoryTableBody = document.getElementById('roundHistoryTableBody');
+        const closeQueryBattleModalBtn = document.getElementById('closeQueryBattleModalBtn');
+
+        // Modal elements - History
+        const historyModal = document.getElementById('historyModal');
+        const pastGamesList = document.getElementById('pastGamesList');
+        const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+        const selectAllHistoryCheckbox = document.getElementById('selectAllHistoryCheckbox'); // New: Select All checkbox
+        const deleteSelectedHistoryBtn = document.getElementById('deleteSelectedHistoryBtn'); // New: Delete Selected button
+
+        // Modal elements - Detailed History
+        const detailedHistoryModal = document.getElementById('detailedHistoryModal');
+        const detailedHistoryTitle = document.getElementById('detailedHistoryTitle');
+        const detailedFinalScoresGrid = document.getElementById('detailedFinalScoresGrid'); // This element is now unused in HTML but kept for safety in JS
+        const detailedRoundHistoryHeader = document.getElementById('detailedRoundHistoryHeader');
+        const detailedRoundHistoryBody = document.getElementById('detailedRoundHistoryBody');
+        const closeDetailedHistoryModalBtn = document.getElementById('closeDetailedHistoryModalBtn');
+
+
+        // Modal elements - End game
+        const endGameModal = document.getElementById('endGameModal');
+        const finalScoresList = document.getElementById('finalScoresList');
+        const finalZimoCount = document.getElementById('finalZimoCount');
+        const finalChongCount = document.getElementById('finalChongCount');
+        const finalSihuaCount = document.getElementById('finalSihuaCount');
+        const confirmEndGameBtn = document.getElementById('confirmEndGameBtn');
+
+        // Generic Confirmation Modal elements
+        const confirmationModal = document.getElementById('confirmationModal');
+        const confirmationModalTitle = document.getElementById('confirmationModalTitle');
+        const confirmationModalMessage = document.getElementById('confirmationModalMessage');
+        const confirmYesBtn = document.getElementById('confirmYesBtn');
+        const confirmNoBtn = document.getElementById('confirmNoBtn');
+
+        // Removed Debug Info Modal elements
+        // const debugModal = document.getElementById('debugModal');
+        // const debugInfoContent = document.getElementById('debugInfoContent');
+        // const closeDebugModalBtn = document.getElementById('closeDebugModalBtn');
+
+        let currentScoreMode = ''; // 'zimo', 'chong' or 'sihuatongse'
+
+        // --- Message display function ---
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // --- Custom Confirmation Modal functions ---
+        let confirmPromiseResolve = null;
+
+        function showCustomConfirmation(title, message, yesText = '是', noText = '否') {
+            return new Promise((resolve) => {
+                confirmationModalTitle.textContent = title;
+                confirmationModalMessage.textContent = message;
+                confirmYesBtn.textContent = yesText; // Set custom text for Yes button
+                confirmNoBtn.textContent = noText;   // Set custom text for No button
+                
+                // 确保历史记录模态框在确认模态框显示时被隐藏
+                historyModal.classList.add('hidden'); 
+                confirmationModal.classList.remove('hidden');
+                
+                confirmPromiseResolve = resolve; // Store resolve for later use
+
+                // Remove old listeners to prevent duplicates
+                confirmYesBtn.removeEventListener('click', handleConfirmYes);
+                confirmNoBtn.removeEventListener('click', handleConfirmNo);
+
+                // Add new listeners
+                confirmYesBtn.addEventListener('click', handleConfirmYes);
+                confirmNoBtn.addEventListener('click', handleConfirmNo);
+            });
+        }
+
+        function hideCustomConfirmation() {
+            confirmationModal.classList.add('hidden');
+            // 确认模态框隐藏后，重新显示历史记录模态框
+            historyModal.classList.remove('hidden'); 
+            confirmPromiseResolve = null; // Clear the resolve function
+        }
+
+        function handleConfirmYes() {
+            console.log('handleConfirmYes triggered.');
+            if (confirmPromiseResolve) {
+                console.log('Calling confirmPromiseResolve(true).');
+                confirmPromiseResolve(true); // 先解析 Promise
+            }
+            hideCustomConfirmation(); // 再隐藏模态框
+        }
+
+        function handleConfirmNo() {
+            console.log('handleConfirmNo triggered.');
+            if (confirmPromiseResolve) {
+                console.log('Calling confirmPromiseResolve(false).');
+                confirmPromiseResolve(false); // 先解析 Promise
+            }
+            hideCustomConfirmation(); // 再隐藏模态框
+        }
+
+
+        // Helper function to start a new game based on settings from index.html
+        function startNewGameFromIndexSettings() {
+            console.log('startNewGameFromIndexSettings: Attempting to start new game from localStorage...');
+            const savedSettings = localStorage.getItem('currentGameSettings');
+            const savedActivePlayers = localStorage.getItem('activePlayers');
+            console.log('startNewGameFromIndexSettings: RAW savedSettings from localStorage:', savedSettings);
+            console.log('startNewGameFromIndexSettings: RAW savedActivePlayers from localStorage:', savedActivePlayers);
+
+            if (savedSettings && savedActivePlayers) {
+                currentSettings = JSON.parse(savedSettings);
+                activePlayers = JSON.parse(savedActivePlayers);
+                console.log('startNewGameFromIndexSettings: PARSED activePlayers:', activePlayers);
+                console.log('startNewGameFromIndexSettings: Number of active players:', activePlayers.length); // Explicitly log count
+
+                // Initialize scores for new game
+                playerScores = {};
+                activePlayers.forEach(player => {
+                    playerScores[player] = 0;
+                });
+                lastRoundChanges = {};
+                gameRoundHistory = [];
+                zimoCount = 0;
+                chongCount = 0;
+                sihuaCount = 0;
+
+                // Create a new in-progress entry in the archive for this fresh game
+                const newGameId = Date.now();
+                const newGameSummary = {
+                    id: newGameId,
+                    timestamp: new Date().toISOString(),
+                    status: 'in-progress',
+                    gameSettings: { ...currentSettings },
+                    activePlayersAtEnd: [...activePlayers], // Store initial active players
+                    playerScores: { ...playerScores }, // Store initial scores
+                    detailedHistory: [],
+                    zimoCount: 0,
+                    chongCount: 0,
+                    sihuaCount: 0
+                };
+                mahjongGameHistoryArchive.push(newGameSummary);
+                currentActiveGameId = newGameId;
+                localStorage.setItem('mahjongInProgressGameId', newGameId.toString()); // Save the ID of the in-progress game
+                localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive)); // Save archive immediately
+                console.log('startNewGameFromIndexSettings: New game started and saved to archive:', newGameSummary);
+
+                showMessage('已开始新牌局。', 'info');
+                // Clear the temporary settings from index.html as they are now part of the in-progress game
+                localStorage.removeItem('currentGameSettings');
+                localStorage.removeItem('activePlayers'); // This is cleared as the data is now in the archive
+                console.log('startNewGameFromIndexSettings: Cleared temporary localStorage items (currentGameSettings, activePlayers).');
+
+            } else {
+                // Essential data missing, redirect back to index.html to force setup
+                showMessage('未找到游戏设置，将返回主页。', 'error');
+                console.error('startNewGameFromIndexSettings: Missing game settings or active players in localStorage. Redirecting.');
+                setTimeout(() => { window.location.href = 'index.html'; }, 2000); // Redirect after 2 seconds
+            }
+        }
+
+        // --- Data loading ---
+        async function loadGameData() { // Made async to await custom confirmation
+            console.log('--- loadGameData started ---');
+            console.log('loadGameData: Current mahjongInProgressGameId in localStorage (at start):', localStorage.getItem('mahjongInProgressGameId'));
+            const rawSavedGameHistoryArchive = localStorage.getItem('mahjongGameHistoryArchive');
+            console.log('loadGameData: Raw mahjongGameHistoryArchive from localStorage (at start):', rawSavedGameHistoryArchive);
+
+            // 1. Always load the full history archive first
+            if (rawSavedGameHistoryArchive) {
+                try {
+                    let parsedArchive = JSON.parse(rawSavedGameHistoryArchive);
+                    // Data migration logic: Add 'status' field if missing
+                    parsedArchive = parsedArchive.map(game => {
+                        if (game.status === undefined) {
+                            if (game.finalScores) {
+                                // If it has finalScores, assume it was a completed game from an older version
+                                game.status = 'completed';
+                                console.log(`loadGameData: Migrated game ${game.id} to status 'completed'.`);
+                            } else {
+                                // Otherwise, assume it was an in-progress game
+                                game.status = 'in-progress';
+                                console.log(`loadGameData: Migrated game ${game.id} to status 'in-progress'.`);
+                            }
+                        }
+                        return game;
+                    });
+                    mahjongGameHistoryArchive = parsedArchive;
+                    console.log('loadGameData: Loaded and potentially migrated mahjongGameHistoryArchive (in memory):', mahjongGameHistoryArchive);
+                    // Re-save the migrated data immediately to localStorage
+                    localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
+                    console.log('loadGameData: mahjongGameHistoryArchive re-saved to localStorage after potential migration.');
+                } catch (e) {
+                    console.error('loadGameData: Error parsing mahjongGameHistoryArchive from localStorage:', e);
+                    mahjongGameHistoryArchive = [];
+                    showMessage('历史记录数据损坏，已重置。', 'error');
+                    localStorage.removeItem('mahjongGameHistoryArchive'); // Clear corrupted data
+                }
+            } else {
+                mahjongGameHistoryArchive = [];
+                console.log('loadGameData: mahjongGameHistoryArchive not found, initializing empty array.');
+            }
+
+            const savedInProgressGameId = localStorage.getItem('mahjongInProgressGameId');
+            let resumedGame = null;
+
+            if (savedInProgressGameId) {
+                // Try to find the in-progress game in the archive
+                resumedGame = mahjongGameHistoryArchive.find(game => game.id === parseInt(savedInProgressGameId) && game.status === 'in-progress');
+                if (resumedGame) {
+                    console.log('loadGameData: Found in-progress game to resume:', resumedGame);
+                } else {
+                    console.log('loadGameData: No in-progress game found in archive with ID:', savedInProgressGameId);
+                    // If ID exists but no matching in-progress game, clear the ID
+                    localStorage.removeItem('mahjongInProgressGameId');
+                    console.log('loadGameData: Cleared mahjongInProgressGameId from localStorage as no matching in-progress game found in archive.');
+                }
+            } else {
+                console.log('loadGameData: No mahjongInProgressGameId found in localStorage.');
+            }
+
+            if (resumedGame) {
+                // Found an in-progress game, prompt user to resume
+                const confirmResume = await showCustomConfirmation('恢复牌局', '检测到未完成的牌局，是否继续？', '是', '否');
+                if (confirmResume) {
+                    // Resume game state
+                    currentSettings = resumedGame.gameSettings;
+                    activePlayers = resumedGame.activePlayersAtEnd; // THIS IS WHERE activePlayers IS SET from resumed game
+                    playerScores = resumedGame.playerScores || {};
+                    lastRoundChanges = resumedGame.lastRoundChanges || {};
+                    gameRoundHistory = resumedGame.detailedHistory || [];
+                    zimoCount = resumedGame.zimoCount || 0;
+                    chongCount = resumedGame.chongCount || 0;
+                    sihuaCount = resumedGame.sihuaCount || 0;
+                    currentActiveGameId = resumedGame.id;
+                    console.log('loadGameData: Resumed game. activePlayers after resume:', activePlayers);
+                    showMessage('已恢复未完成的牌局。', 'success');
+                } else {
+                    // User chose not to resume, discard the game
+                    resumedGame.status = 'discarded'; // Mark as discarded
+                    localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive)); // Persist status change
+                    localStorage.removeItem('mahjongInProgressGameId'); // Clear in-progress flag
+                    console.log('loadGameData: In-progress game discarded and mahjongInProgressGameId cleared from localStorage.');
+                    showMessage('未完成的牌局已放弃。', 'info');
+                    // Now, start a brand new game
+                    startNewGameFromIndexSettings();
+                }
+            } else {
+                // No in-progress game to resume, or user discarded it.
+                // Start a brand new game.
+                console.log('loadGameData: No game to resume, calling startNewGameFromIndexSettings().');
+                startNewGameFromIndexSettings();
+            }
+
+            renderTotalScores();
+            console.log('--- loadGameData finished ---');
+        }
+
+        // --- Save current game state to in-progress storage ---
+        function saveGameData() {
+            if (!currentActiveGameId || activePlayers.length === 0) { // Only save if a game is actually in progress
+                console.log('saveGameData: No active game ID or players, skipping save.');
+                return;
+            }
+            console.log('saveGameData: Saving game data. Current activePlayers:', activePlayers);
+
+            // Find the current game in the archive
+            const gameIndex = mahjongGameHistoryArchive.findIndex(game => game.id === currentActiveGameId);
+
+            if (gameIndex !== -1) {
+                // Update the existing entry with the latest data
+                mahjongGameHistoryArchive[gameIndex].playerScores = { ...playerScores };
+                mahjongGameHistoryArchive[gameIndex].lastRoundChanges = { ...lastRoundChanges };
+                mahjongGameHistoryArchive[gameIndex].detailedHistory = [...gameRoundHistory];
+                mahjongGameHistoryArchive[gameIndex].zimoCount = zimoCount;
+                mahjongGameHistoryArchive[gameIndex].chongCount = chongCount;
+                mahjongGameHistoryArchive[gameIndex].sihuaCount = sihuaCount;
+                // Update timestamp to reflect last save time (optional, but good for "last played")
+                mahjongGameHistoryArchive[gameIndex].timestamp = new Date().toISOString(); 
+                mahjongGameHistoryArchive[gameIndex].status = 'in-progress'; // Ensure it's still marked as in-progress
+                mahjongGameHistoryArchive[gameIndex].activePlayersAtEnd = [...activePlayers]; // Ensure activePlayers are saved
+                console.log('saveGameData: Updated in-progress game in archive:', mahjongGameHistoryArchive[gameIndex]);
+            } else {
+                // This case should ideally not happen if currentActiveGameId is set correctly,
+                // but as a fallback, create a new entry.
+                // This fallback is less likely with the new startNewGameFromIndexSettings logic.
+                const newGameSummary = {
+                    id: currentActiveGameId, // Use the existing ID
+                    timestamp: new Date().toISOString(),
+                    status: 'in-progress',
+                    gameSettings: { ...currentSettings },
+                    activePlayersAtEnd: [...activePlayers], // Ensure activePlayers are saved
+                    playerScores: { ...playerScores },
+                    lastRoundChanges: { ...lastRoundChanges },
+                    detailedHistory: [...gameRoundHistory],
+                    zimoCount: zimoCount,
+                    chongCount: chongCount,
+                    sihuaCount: sihuaCount
+                };
+                mahjongGameHistoryArchive.push(newGameSummary);
+                console.log('saveGameData: Created new in-progress game (fallback) in archive:', newGameSummary);
+            }
+
+            try {
+                localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
+                console.log('saveGameData: Attempted to save mahjongGameHistoryArchive to localStorage.');
+                const storedDataAfterSave = localStorage.getItem('mahjongGameHistoryArchive');
+                if (storedDataAfterSave === JSON.stringify(mahjongGameHistoryArchive)) {
+                    console.log('saveGameData: localStorage write verified: Data matches in-memory archive after save.');
+                } else {
+                    console.error('saveGameData: localStorage write failed verification: Stored data does NOT match in-memory archive after save.');
+                }
+            } catch (e) {
+                console.error('Error saving mahjongGameHistoryArchive to localStorage:', e);
+            }
+            localStorage.setItem('mahjongInProgressGameId', currentActiveGameId.toString()); // Keep track of the in-progress game ID
+            console.log('saveGameData: Game data saved to localStorage. Current mahjongInProgressGameId:', localStorage.getItem('mahjongInProgressGameId'));
+        }
+
+        // --- Render total scores list ---
+        function renderTotalScores() {
+            console.log('renderTotalScores: Current activePlayers for rendering:', activePlayers); // Added log
+            displayBaseScore.textContent = currentSettings.baseScore;
+            displayFlowerScore.textContent = currentSettings.flowerScore;
+            displayLaziScore.textContent = currentSettings.laziScore;
+
+            totalScoresGrid.innerHTML = '';
+            // Sort players by score from high to low
+            const sortedPlayers = Object.entries(playerScores).sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+
+            sortedPlayers.forEach(([player, score]) => {
+                // Player Name
+                const playerNameDiv = document.createElement('div');
+                playerNameDiv.className = 'py-2 px-1 text-gray-800 text-lg border-b border-gray-100 last:border-b-0';
+                playerNameDiv.textContent = player;
+                totalScoresGrid.appendChild(playerNameDiv);
+
+                // Initial Score (current total - last round change)
+                const lastChange = lastRoundChanges[player] !== undefined ? lastRoundChanges[player] : 0;
+                const initialScore = score - lastChange;
+                const initialScoreDiv = document.createElement('div');
+                initialScoreDiv.className = `py-2 px-1 font-bold text-lg border-b border-gray-100 last:border-b-0 ${initialScore >= 0 ? 'text-gray-600' : 'text-red-600'}`; // Neutral color for initial score or red if negative
+                initialScoreDiv.textContent = initialScore;
+                totalScoresGrid.appendChild(initialScoreDiv);
+
+                // Last Round Change
+                const lastChangeDiv = document.createElement('div');
+                lastChangeDiv.className = `py-2 px-1 font-bold text-lg border-b border-gray-100 last:border-b-0 ${lastChange >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                // FIX: Changed 'change' to 'lastChange' as 'change' was undefined in this scope.
+                lastChangeDiv.textContent = lastChange > 0 ? `+${lastChange}` : lastChange; 
+                totalScoresGrid.appendChild(lastChangeDiv);
+                
+                // Total Score
+                const totalScoreDiv = document.createElement('div');
+                totalScoreDiv.className = `py-2 px-1 font-bold text-xl border-b border-gray-100 last:border-b-0 ${score >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                totalScoreDiv.textContent = score;
+                totalScoresGrid.appendChild(totalScoreDiv);
+            });
+        }
+
+        // --- Render player selection buttons (for Zimo/Sihuatongse and Chong's winner selection) ---
+        function renderPlayerSelectionButtons(container, excludePlayerName = null) {
+            container.innerHTML = ''; // Clear container
+            const playersToRender = activePlayers.filter(p => p !== excludePlayerName);
+            console.log('renderPlayerSelectionButtons: Players to render:', playersToRender); // Added log
+
+            playersToRender.forEach(player => {
+                const playerBtn = document.createElement('button');
+                playerBtn.type = 'button'; // Prevent button from submitting form
+                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200';
+                playerBtn.textContent = player;
+                playerBtn.dataset.playerName = player; // Store player name
+
+                playerBtn.addEventListener('click', (event) => {
+                    if (currentScoreMode === 'zimo') { // Multi-select for Zimo
+                        event.target.classList.toggle('selected');
+                        event.target.classList.toggle('bg-gray-200');
+                        event.target.classList.toggle('hover:bg-gray-300');
+                        event.target.classList.toggle('bg-blue-500');
+                        event.target.classList.toggle('hover:bg-blue-600');
+                        event.target.classList.toggle('text-white');
+                        updateCalculatedScoreDisplay(); // Update calculated display for Zimo
+                    } else if (currentScoreMode === 'chong') { // Multi-select for Chong winners
+                        event.target.classList.toggle('selected');
+                        event.target.classList.toggle('bg-gray-200');
+                        event.target.classList.toggle('hover:bg-gray-300');
+                        event.target.classList.toggle('bg-blue-500');
+                        event.target.classList.toggle('hover:bg-blue-600');
+                        event.target.classList.toggle('text-white');
+                        // Update the Chong scoring table based on selected winners
+                        updateChongScoringTable();
+                    }
+                     else if (currentScoreMode === 'sihuatongse') {
+                        // Multi-select for sihuatongse
+                        event.target.classList.toggle('selected');
+                        event.target.classList.toggle('bg-gray-200');
+                        event.target.classList.toggle('hover:bg-gray-300');
+                        event.target.classList.toggle('bg-blue-500');
+                        event.target.classList.toggle('hover:bg-blue-600');
+                        event.target.classList.toggle('text-white');
+                        updateCalculatedScoreDisplay(); // Update calculated display for Sihuatongse
+                    }
+                });
+                container.appendChild(playerBtn);
+            });
+        }
+
+        // --- Populate Chong Player Select dropdown options ---
+        function populateChongPlayerSelectOptions() {
+            chongPlayerSelect.innerHTML = '';
+            activePlayers.forEach(player => {
+                const option = document.createElement('option');
+                option.value = player;
+                option.textContent = player;
+                chongPlayerSelect.appendChild(option);
+            });
+            if (activePlayers.length <= 1) {
+                showMessage('出冲模式至少需要2位玩家。', 'error');
+            }
+        }
+
+        // --- Handle Chong Player Select change event ---
+        function handleChongPlayerChange() {
+            const selectedChongPlayer = chongPlayerSelect.value;
+            // Render selection buttons for potential winners (excluding chong player)
+            renderPlayerSelectionButtons(chongWinnerSelectionButtons, selectedChongPlayer);
+            // Reset selected winners and the table
+            document.querySelectorAll('#chongWinnerSelectionButtons .player-selection-item').forEach(btn => {
+                btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+            });
+            updateChongScoringTable(); // Re-render table with no winners initially
+        }
+
+        // --- Update the Chong Scoring Table based on selected winners ---
+        function updateChongScoringTable() {
+            chongWinnerScoringTableBody.innerHTML = ''; // Clear existing rows
+            const selectedChongWinners = Array.from(document.querySelectorAll('#chongWinnerSelectionButtons .player-selection-item.selected'))
+                                        .map(btn => btn.dataset.playerName);
+            
+            // Create a new temporary data structure for only the currently selected winners
+            const newChongIndividualWinnerData = {}; 
+
+            if (selectedChongWinners.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" class="text-gray-500 py-4">请点击上方玩家姓名选择胡牌玩家。</td>`;
+                chongWinnerScoringTableBody.appendChild(tr);
+                chongIndividualWinnerData = {}; // Clear global data if no winners selected
+                return;
+            }
+
+            selectedChongWinners.forEach(player => {
+                const tr = document.createElement('tr');
+                tr.dataset.playerName = player; // Store player name on the row
+
+                // Retrieve existing data or initialize with 0
+                const existingData = chongIndividualWinnerData[player] || { flower: 0, fan: 0, multiplier: 0, calculatedScore: 0 };
+                newChongIndividualWinnerData[player] = existingData; // Add to new data structure
+
+                // Player Name
+                const playerNameTd = document.createElement('td');
+                playerNameTd.textContent = player;
+                tr.appendChild(playerNameTd);
+
+                // Flower Count Input
+                const flowerTd = document.createElement('td');
+                const flowerInput = document.createElement('input');
+                flowerInput.type = 'number';
+                flowerInput.value = existingData.flower;
+                flowerInput.min = 0;
+                flowerInput.className = 'flower-input';
+                flowerInput.dataset.playerName = player;
+                flowerInput.addEventListener('input', updateChongIndividualScore);
+                flowerTd.appendChild(flowerInput);
+                tr.appendChild(flowerTd);
+
+                // Fan Count Input
+                const fanTd = document.createElement('td');
+                const fanInput = document.createElement('input');
+                fanInput.type = 'number';
+                fanInput.value = existingData.fan;
+                fanInput.min = 0;
+                fanInput.className = 'fan-input';
+                fanInput.dataset.playerName = player;
+                fanInput.addEventListener('input', updateChongIndividualScore);
+                fanTd.appendChild(fanInput);
+                tr.appendChild(fanTd);
+
+                // Multiplier Input
+                const multiplierTd = document.createElement('td');
+                const multiplierInput = document.createElement('input');
+                multiplierInput.type = 'number';
+                multiplierInput.value = existingData.multiplier;
+                multiplierInput.min = 0;
+                multiplierInput.className = 'multiplier-input';
+                multiplierInput.dataset.playerName = player;
+                multiplierInput.addEventListener('input', updateChongIndividualScore);
+                multiplierTd.appendChild(multiplierInput);
+                tr.appendChild(multiplierTd);
+
+                // Calculated Score Display
+                const scoreTd = document.createElement('td');
+                const scoreSpan = document.createElement('span');
+                scoreSpan.className = 'calculated-individual-score font-bold text-blue-700';
+                scoreSpan.textContent = existingData.calculatedScore; // Use stored calculated score, which should be 0 initially
+                scoreTd.appendChild(scoreSpan);
+                tr.appendChild(scoreTd);
+
+                chongWinnerScoringTableBody.appendChild(tr);
+            });
+            // Update the global chongIndividualWinnerData with only the selected winners' data
+            chongIndividualWinnerData = newChongIndividualWinnerData;
+            // After rendering all rows, update their calculated scores (this will calculate 0 if inputs are 0)
+            updateAllChongIndividualScores();
+        }
+
+        // --- Update individual calculated score for Chong mode ---
+        function updateChongIndividualScore(event) {
+            const playerName = event.target.dataset.playerName;
+            const row = event.target.closest('tr');
+            const flower = parseInt(row.querySelector('.flower-input').value) || 0;
+            const fan = parseInt(row.querySelector('.fan-input').value) || 0;
+            const multiplier = parseInt(row.querySelector('.multiplier-input').value) || 0;
+
+            const calculatedScore = calculateScoreForIndividualWinner(flower, fan, multiplier);
+            row.querySelector('.calculated-individual-score').textContent = calculatedScore;
+
+            // Store updated values
+            chongIndividualWinnerData[playerName] = { flower, fan, multiplier, calculatedScore };
+        }
+
+        // --- Update all individual calculated scores for Chong mode (e.g., on initial render) ---
+        function updateAllChongIndividualScores() {
+            document.querySelectorAll('#chongWinnerScoringTableBody tr').forEach(row => {
+                const playerName = row.dataset.playerName;
+                const flower = parseInt(row.querySelector('.flower-input').value) || 0;
+                const fan = parseInt(row.querySelector('.fan-input').value) || 0;
+                const multiplier = parseInt(row.querySelector('.multiplier-input').value) || 0;
+
+                const calculatedScore = calculateScoreForIndividualWinner(flower, fan, multiplier);
+                row.querySelector('.calculated-individual-score').textContent = calculatedScore;
+                chongIndividualWinnerData[playerName] = { flower, fan, multiplier, calculatedScore };
+            });
+        }
+
+        // --- Calculate score for a single winner (used by both Zimo and Chong) ---
+        function calculateScoreForIndividualWinner(flowerCount, fanCount, multiplier) {
+            const baseScore = currentSettings.baseScore;
+            const flowerScorePerUnit = currentSettings.flowerScore;
+            const laziScore = currentSettings.laziScore;
+
+            let calculateBaseAmount;
+            if (flowerCount === 0) {
+                calculateBaseAmount = laziScore / 2;
+            } else {
+                calculateBaseAmount = (flowerCount * flowerScorePerUnit) + baseScore;
+            }
+            
+            let calculatedValue = calculateBaseAmount * (2 ** fanCount);
+            let cappedValue = Math.min(calculatedValue, laziScore); // Cannot exceed Lazi
+
+            let finalAmount = multiplier === 0 ? cappedValue : cappedValue * (multiplier + 1);
+            return finalAmount;
+        }
+
+        // --- Update calculated score display for Zimo and Sihuatongse mode ---
+        function updateCalculatedScoreDisplay() {
+            if (currentScoreMode === 'zimo') {
+                calculatedScoreDisplayContainer.classList.remove('hidden');
+                const fanCount = parseInt(fanCountInput.value) || 0;
+                const flowerCount = parseInt(flowerCountInput.value) || 0;
+                const multiplier = parseInt(multiplierInput.value) || 0;
+                const finalAmount = calculateScoreForIndividualWinner(flowerCount, fanCount, multiplier);
+                calculatedScoreLabel.textContent = '预计每位输家支付:';
+                calculatedScoreDisplay.textContent = finalAmount;
+            } else if (currentScoreMode === 'sihuatongse') {
+                calculatedScoreDisplayContainer.classList.remove('hidden');
+                const laziScore = currentSettings.laziScore;
+                const paymentPerLoserToEachWinner = laziScore / 2;
+                calculatedScoreLabel.textContent = '预计每位输家支付给每位胡牌玩家:';
+                calculatedScoreDisplay.textContent = paymentPerLoserToEachWinner;
+            } else {
+                calculatedScoreDisplayContainer.classList.add('hidden');
+            }
+        }
+
+
+        // --- Display Scoring Modal ---
+        function showScoreModal(mode) {
+            currentScoreMode = mode;
+            // Reset common modal content inputs
+            fanCountInput.value = 0;
+            flowerCountInput.value = 0;
+            multiplierInput.value = 0;
+
+            // Reset all player selection button visual states for commonInputsContainer
+            document.querySelectorAll('#winnerSelectionContainer .player-selection-item').forEach(btn => {
+                btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+            });
+            // Reset player selection button visual states for chongWinnerSelectionButtons
+            document.querySelectorAll('#chongWinnerSelectionButtons .player-selection-item').forEach(btn => {
+                btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+            });
+
+
+            // Remove old event listeners to prevent duplicate bindings
+            fanCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
+
+
+            // Hide all specific sections first
+            commonInputsContainer.classList.add('hidden');
+            chongPlayerSelectDiv.classList.add('hidden');
+            chongWinnerScoringTableContainer.classList.add('hidden');
+            calculatedScoreDisplayContainer.classList.add('hidden'); // Hide global calculated display
+
+            if (mode === 'zimo') {
+                modalTitle.textContent = '自摸结算';
+                commonInputsContainer.classList.remove('hidden'); // Show common inputs
+                // Ensure all Zimo specific inputs are visible
+                fanCountDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
+                flowerCountDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
+                multiplierDiv.classList.remove('hidden'); // Ensure it's visible for Zimo
+
+                calculatedScoreDisplayContainer.classList.remove('hidden'); // Show global calculated display
+                calculatedScoreLabel.textContent = '预计每位输家支付:'; // Label for Zimo
+                commonWinnerLabel.textContent = '胡牌玩家 (点击选择):'; // Label for Zimo winner selection
+                renderPlayerSelectionButtons(winnerSelectionContainer); // Render all player buttons for selection
+                // Bind real-time calculation events
+                fanCountInput.addEventListener('input', updateCalculatedScoreDisplay);
+                flowerCountInput.addEventListener('input', updateCalculatedScoreDisplay);
+                multiplierInput.addEventListener('input', updateCalculatedScoreDisplay);
+                updateCalculatedScoreDisplay(); // Initial calculation
+            } else if (mode === 'chong') {
+                modalTitle.textContent = '出冲结算';
+                chongPlayerSelectDiv.classList.remove('hidden'); // Show chong player select
+                chongWinnerScoringTableContainer.classList.remove('hidden'); // Show chong table
+
+                populateChongPlayerSelectOptions(); // Populate chong player select first
+                chongPlayerSelect.addEventListener('change', handleChongPlayerChange); // Add listener for chong player change
+
+                // Initial render of winner table, excluding the default selected chong player
+                handleChongPlayerChange(); // Call once to set initial state
+                // Note: Real-time calculation is now per-row in the table, so global display is hidden
+            } else if (mode === 'sihuatongse') {
+                modalTitle.textContent = '四花同色结算';
+                commonInputsContainer.classList.remove('hidden'); // Show common inputs
+                fanCountDiv.classList.add('hidden'); // Four flowers same color doesn't involve fan count
+                flowerCountDiv.classList.add('hidden'); // Four flowers same color doesn't involve flower count
+                multiplierDiv.classList.add('hidden'); // Four flowers same color doesn't involve multiplier
+                calculatedScoreDisplayContainer.classList.remove('hidden'); // Show global calculated display for Sihuatongse
+                commonWinnerLabel.textContent = '四花同色玩家 (点击选择):'; // Label for Sihuatongse winner selection
+
+                renderPlayerSelectionButtons(winnerSelectionContainer); // Render all player buttons for multi-selection
+                updateCalculatedScoreDisplay(); // Initial calculation for Sihuatongse (using the unified function)
+            }
+            scoreModal.classList.remove('hidden');
+        }
+
+
+        // --- Hide Scoring Modal ---
+        function hideScoreModal() {
+            scoreModal.classList.add('hidden');
+            // Remove event listeners to prevent duplicate bindings
+            fanCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
+            chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
+
+            // Clear chongIndividualWinnerData on modal close
+            chongIndividualWinnerData = {}; 
+        }
+
+        // --- Calculate and Apply Score Logic ---
+        function calculateAndApplyScore() {
+            let calculationSuccessful = false; // Flag to indicate if calculation was successful
+            const roundChanges = {};
+            activePlayers.forEach(p => roundChanges[p] = 0); // Initialize round changes
+
+            // Declare variables at a higher scope to ensure they are always defined
+            let selectedWinners = [];
+            let fanCount = 0;
+            let flowerCount = 0;
+            let multiplier = 0;
+            let chongPlayer = null;
+
+            try {
+                if (currentScoreMode === 'zimo') {
+                    selectedWinners = Array.from(document.querySelectorAll('#winnerSelectionContainer .player-selection-item.selected'))
+                                        .map(btn => btn.dataset.playerName);
+                    console.log('Zimo: selectedWinners:', selectedWinners); // Debug log
+
+                    fanCount = parseInt(fanCountInput.value) || 0;
+                    flowerCount = parseInt(flowerCountInput.value) || 0;
+                    multiplier = parseInt(multiplierInput.value) || 0;
+
+                    if (selectedWinners.length === 0) {
+                        showMessage('请选择胡牌玩家！', 'error');
+                        console.error('Zimo: Validation failed: No winners selected.');
+                        return; // Exit early
+                    }
+                    if (fanCount < 0 || flowerCount < 0 || multiplier < 0) {
+                        showMessage('番数、花牌数量和翻倍数值不能为负！', 'error');
+                        console.error('Zimo: Validation failed: Negative input values.');
+                        return; // Exit early
+                    }
+                    if (activePlayers.length < 2) {
+                        showMessage('自摸至少需要2位玩家！', 'error');
+                        console.error('Zimo: Validation failed: Less than 2 active players.');
+                        return; // Exit early
+                    }
+                    // This check is important for Zimo to ensure not all players are winners
+                    if (selectedWinners.length === activePlayers.length) {
+                         showMessage('所有玩家都自摸了？请检查胡牌玩家选择。', 'error');
+                         console.error('Zimo: Validation failed: All players selected as winners.');
+                         return; // Exit early
+                    }
+
+                    const finalAmountPerLoserPerWinner = calculateScoreForIndividualWinner(flowerCount, fanCount, multiplier);
+                    const losers = activePlayers.filter(p => !selectedWinners.includes(p));
+                    console.log('Zimo: losers:', losers); // Debug log
+
+                    selectedWinners.forEach(winner => {
+                        losers.forEach(loser => {
+                            roundChanges[winner] += finalAmountPerLoserPerWinner;
+                            roundChanges[loser] -= finalAmountPerLoserPerWinner;
+                        });
+                    });
+                    zimoCount++;
+                    calculationSuccessful = true; // Set flag
+
+                } else if (currentScoreMode === 'chong') {
+                    chongPlayer = chongPlayerSelect.value;
+                    selectedWinners = Object.keys(chongIndividualWinnerData); // Get winners from the table data
+                    console.log('Chong: selectedWinners:', selectedWinners); // Debug log
+                    console.log('Chong: chongPlayer:', chongPlayer); // Debug log
+
+                    if (!chongPlayer) {
+                        showMessage('请选择出冲玩家！', 'error');
+                        console.error('Chong: Validation failed: No chong player selected.');
+                        return; // Exit early
+                    }
+                    if (selectedWinners.length === 0) {
+                        showMessage('请选择胡牌玩家并输入花数、番数和翻倍！', 'error');
+                        console.error('Chong: Validation failed: No winners selected.');
+                        return; // Exit early
+                    }
+                    if (selectedWinners.includes(chongPlayer)) {
+                        showMessage('胡牌玩家和出冲玩家不能是同一个人！', 'error');
+                        console.error('Chong: Validation failed: Winner and chong player are the same.');
+                        return; // Exit early
+                    }
+
+                    let totalPaymentFromChongPlayer = 0;
+
+                    for (const winner of selectedWinners) { // Use for...of for better loop control with throw
+                        const winnerData = chongIndividualWinnerData[winner];
+                        if (!winnerData) {
+                            console.error(`Chong: Missing data for winner: ${winner}`);
+                            showMessage('数据错误，请重试。', 'error');
+                            throw new Error('Missing data for winner'); // Propagate error
+                        }
+                        // Validate inputs for each winner
+                        if (winnerData.fan < 0 || winnerData.flower < 0 || winnerData.multiplier < 0) {
+                            showMessage(`玩家 ${winner} 的花数、番数或翻倍数值不能为负！`, 'error');
+                            console.error(`Chong: Validation failed: Negative input for winner ${winner}.`);
+                            throw new Error('Invalid input for winner'); // Propagate error to catch block
+                        }
+
+                        const finalAmountPerWinner = calculateScoreForIndividualWinner(
+                            winnerData.flower, winnerData.fan, winnerData.multiplier
+                        );
+                        roundChanges[winner] += finalAmountPerWinner;
+                        totalPaymentFromChongPlayer += finalAmountPerWinner;
+                    }
+
+                    roundChanges[chongPlayer] -= totalPaymentFromChongPlayer;
+                    chongCount++;
+                    calculationSuccessful = true; // Set flag
+
+                } else if (currentScoreMode === 'sihuatongse') {
+                    selectedWinners = Array.from(document.querySelectorAll('#winnerSelectionContainer .player-selection-item.selected'))
+                                        .map(btn => btn.dataset.playerName);
+                    console.log('Sihuatongse: selectedWinners:', selectedWinners); // Debug log
+                                        
+                    if (selectedWinners.length === 0) {
+                        showMessage('四花同色请选择至少一位胡牌玩家！', 'error');
+                        console.error('Sihuatongse: Validation failed: No winners selected.');
+                        return; // Exit early
+                    }
+
+                    const losers = activePlayers.filter(p => !selectedWinners.includes(p));
+                    console.log('Sihuatongse: losers:', losers); // Debug log
+                    
+                    if (losers.length === 0) {
+                        showMessage('四花同色至少需要一位非胡牌玩家来支付。', 'error');
+                        console.error('Sihuatongse: Validation failed: No losers to pay.');
+                        return; // Exit early
+                    }
+
+                    const laziScore = currentSettings.laziScore;
+                    const paymentPerLoserToEachWinner = laziScore / 2; // Each loser pays half lazi to *each* winner
+
+                    selectedWinners.forEach(winner => {
+                        losers.forEach(loser => {
+                            roundChanges[winner] += paymentPerLoserToEachWinner;
+                            roundChanges[loser] -= paymentPerLoserToEachWinner;
+                        });
+                    });
+                    sihuaCount++;
+                    calculationSuccessful = true; // Set flag
+                }
+
+                if (calculationSuccessful) { // Only apply changes if calculation was successful
+                    // Apply score changes
+                    for (const player in roundChanges) {
+                        if (playerScores[player] !== undefined) {
+                            playerScores[player] += roundChanges[player];
+                        } else {
+                            playerScores[player] = roundChanges[player];
+                        }
+                    }
+                    console.log('Round Changes Applied:', roundChanges); // Added log
+                    console.log('Updated Player Scores:', playerScores); // Added log
+
+                    lastRoundChanges = { ...roundChanges };
+                    gameRoundHistory.push({
+                        roundNum: gameRoundHistory.length + 1,
+                        mode: currentScoreMode,
+                        winners: currentScoreMode === 'chong' ? Object.keys(chongIndividualWinnerData) : selectedWinners, // Use higher-scoped selectedWinners
+                        chongPlayer: currentScoreMode === 'chong' ? chongPlayer : null, 
+                        chongWinnerDetails: currentScoreMode === 'chong' ? chongIndividualWinnerData : null, 
+                        fan: currentScoreMode === 'zimo' ? fanCount : null, 
+                        flower: currentScoreMode === 'zimo' ? flowerCount : null, 
+                        multiplier: currentScoreMode === 'zimo' ? multiplier : null, 
+                        changes: { ...roundChanges }
+                    });
+                    console.log('Added round to gameRoundHistory:', gameRoundHistory[gameRoundHistory.length - 1]); // Added log
+
+                    saveGameData(); // Save current in-progress game after each round
+                    renderTotalScores();
+                    showMessage('结算成功！', 'success');
+                }
+            } catch (error) {
+                console.error("Error during score calculation:", error);
+                showMessage(error.message || '结算失败，请检查输入。', 'error');
+            } finally {
+                hideScoreModal(); // Always try to close modal
+            }
+        }
+
+
+        // --- Display History Modal ---
+        function showHistoryModal() {
+            historyModal.classList.remove('hidden');
+            renderPastGamesList();
+            updateDeleteButtonState(); // Update delete button state when modal opens
+        }
+
+        // --- Hide History Modal ---
+        function hideHistoryModal() {
+            historyModal.classList.add('hidden');
+            // Reset select all checkbox and delete button state when closing
+            selectAllHistoryCheckbox.checked = false;
+            updateDeleteButtonState();
+        }
+
+        // --- Render Past Games List in History Modal ---
+        function renderPastGamesList() {
+            pastGamesList.innerHTML = ''; // Clear existing list
+            console.log('Rendering past games list. Current mahjongGameHistoryArchive:', mahjongGameHistoryArchive); // Added log
+
+            // Display the currently in-progress game if it exists
+            if (currentActiveGameId) {
+                const inProgressGame = mahjongGameHistoryArchive.find(game => game.id === currentActiveGameId && game.status === 'in-progress');
+                if (inProgressGame) {
+                    const gameListItem = document.createElement('div');
+                    gameListItem.className = 'history-list-item bg-blue-100 border-blue-300'; // Highlight in-progress game
+                    // No checkbox for in-progress game as it cannot be deleted from here
+                    gameListItem.innerHTML = `
+                        <div class="flex-1">
+                            <p class="text-lg font-semibold text-blue-800">当前牌局 (未完成)</p>
+                            <p class="text-blue-700 text-sm">最后更新: ${new Date(inProgressGame.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</p>
+                        </div>
+                    `;
+                    // Add click listener to view details, but not for selection
+                    gameListItem.querySelector('div').addEventListener('click', (e) => {
+                        // Prevent click on checkbox from triggering detail view if it were present
+                        if (e.target.type !== 'checkbox') {
+                            showDetailedGameHistory(inProgressGame.id);
+                        }
+                    });
+                    pastGamesList.appendChild(gameListItem);
+                    console.log('Added in-progress game to list:', inProgressGame); // Added log
+                }
+            }
+
+            const completedGames = mahjongGameHistoryArchive.filter(game => game.status === 'completed');
+            console.log('Completed games found:', completedGames); // Added log
+
+            if (completedGames.length === 0 && (!currentActiveGameId || !mahjongGameHistoryArchive.find(game => game.id === currentActiveGameId && game.status === 'in-progress'))) { 
+                // Only show "no history" if NO completed games AND NO in-progress game is being displayed
+                const noHistoryDiv = document.createElement('div');
+                noHistoryDiv.className = 'text-center text-gray-500 py-4';
+                noHistoryDiv.textContent = '暂无历史游戏记录。';
+                pastGamesList.appendChild(noHistoryDiv);
+                console.log('No history records to display.'); // Added log
+                // Disable select all and delete button if no completed games
+                selectAllHistoryCheckbox.disabled = true;
+                deleteSelectedHistoryBtn.disabled = true;
+                return;
+            } else {
+                selectAllHistoryCheckbox.disabled = false; // Enable if there are completed games
+            }
+
+
+            // Group completed games by date
+            const gamesByDate = new Map(); // Map<"YYYY-MM-DD", GameSummary[]>
+            completedGames.forEach(game => {
+                const dateKey = new Date(game.timestamp).toLocaleDateString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric' });
+                if (!gamesByDate.has(dateKey)) {
+                    gamesByDate.set(dateKey, []);
+                }
+                gamesByDate.get(dateKey).push(game);
+            });
+
+            // Sort dates in reverse chronological order
+            const sortedDates = Array.from(gamesByDate.keys()).sort((a, b) => {
+                return new Date(b).getTime() - new Date(a).getTime();
+            });
+
+            sortedDates.forEach(dateKey => {
+                const gamesOnDate = gamesByDate.get(dateKey);
+                // Sort games on the same date by timestamp (most recent first)
+                gamesOnDate.sort((a, b) => b.id - a.id); 
+
+                gamesOnDate.forEach((gameSummary, index) => {
+                    const gameListItem = document.createElement('div');
+                    gameListItem.className = 'history-list-item';
+                    gameListItem.dataset.gameId = gameSummary.id; // Store game ID for lookup
+
+                    // Checkbox for selection
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'history-checkbox h-5 w-5 text-blue-600 rounded';
+                    checkbox.dataset.gameId = gameSummary.id;
+                    checkbox.addEventListener('change', updateDeleteButtonState); // Update button state on change
+                    gameListItem.appendChild(checkbox);
+
+                    // Content for display
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'flex-1'; // Take remaining space
+                    contentDiv.innerHTML = `
+                        <p class="text-lg font-semibold text-blue-700">${dateKey}-${gamesOnDate.length - index}</p>
+                        <p class="text-gray-600 text-sm">结束时间: ${new Date(gameSummary.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</p>
+                    `;
+                    contentDiv.addEventListener('click', () => showDetailedGameHistory(gameSummary.id)); // Click content to view details
+                    gameListItem.appendChild(contentDiv);
+
+                    pastGamesList.appendChild(gameListItem);
+                    console.log('Added completed game to list:', gameSummary); // Added log
+                });
+            });
+            updateDeleteButtonState(); // Initial update after rendering
+        }
+
+        // --- Update state of delete button and select all checkbox ---
+        function updateDeleteButtonState() {
+            const checkboxes = document.querySelectorAll('#pastGamesList .history-checkbox');
+            const selectedCheckboxes = document.querySelectorAll('#pastGamesList .history-checkbox:checked');
+            
+            deleteSelectedHistoryBtn.disabled = selectedCheckboxes.length === 0; // Disable if no items selected
+
+            // Update select all checkbox state
+            if (checkboxes.length > 0 && selectedCheckboxes.length === checkboxes.length) {
+                selectAllHistoryCheckbox.checked = true;
+                selectAllHistoryCheckbox.indeterminate = false;
+            } else if (selectedCheckboxes.length > 0) {
+                selectAllHistoryCheckbox.checked = false;
+                selectAllHistoryCheckbox.indeterminate = true;
+            } else {
+                selectAllHistoryCheckbox.checked = false;
+                selectAllHistoryCheckbox.indeterminate = false;
+            }
+        }
+
+        // --- Handle Select All checkbox change ---
+        function handleSelectAllChange() {
+            const isChecked = selectAllHistoryCheckbox.checked;
+            document.querySelectorAll('#pastGamesList .history-checkbox').forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateDeleteButtonState(); // Update delete button state after select all
+        }
+
+        // --- Delete Selected History Records ---
+        async function deleteSelectedHistory() {
+            const selectedGameIds = Array.from(document.querySelectorAll('#pastGamesList .history-checkbox:checked'))
+                                        .map(checkbox => parseInt(checkbox.dataset.gameId));
+
+            if (selectedGameIds.length === 0) {
+                showMessage('请选择要删除的历史记录。', 'info');
+                return;
+            }
+
+            console.log('--- Deletion process started ---');
+            console.log('1. mahjongGameHistoryArchive (in memory) BEFORE filtering:', JSON.parse(JSON.stringify(mahjongGameHistoryArchive)));
+            console.log('2. Selected game IDs for deletion:', selectedGameIds);
+
+            console.log('2.5. Calling showCustomConfirmation...'); // New log
+            const confirmDelete = await showCustomConfirmation(
+                '确认删除',
+                `您确定要删除这 ${selectedGameIds.length} 条历史记录吗？此操作不可撤销。`,
+                '确认删除', // Custom Yes text
+                '取消'      // Custom No text
+            );
+            console.log('2.6. showCustomConfirmation resolved. Result:', confirmDelete); // New log
+
+            if (confirmDelete) {
+                console.log('3. User confirmed deletion. Proceeding with filtering...'); // New log
+                // Filter out the games to be deleted
+                const originalArchiveLength = mahjongGameHistoryArchive.length;
+                mahjongGameHistoryArchive = mahjongGameHistoryArchive.filter(game => 
+                    !selectedGameIds.includes(game.id)
+                );
+                console.log('4. mahjongGameHistoryArchive (in memory) AFTER filtering:', JSON.parse(JSON.stringify(mahjongGameHistoryArchive)));
+                console.log(`5. Removed ${originalArchiveLength - mahjongGameHistoryArchive.length} games from in-memory archive.`);
+
+                try {
+                    // Save updated archive to localStorage
+                    localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
+                    const storedDataAfterDelete = localStorage.getItem('mahjongGameHistoryArchive');
+                    console.log('6. localStorage content immediately after deletion save:', storedDataAfterDelete);
+                    if (storedDataAfterDelete === JSON.stringify(mahjongGameHistoryArchive)) {
+                        console.log('7. localStorage write verified: Data matches in-memory archive after deletion.');
+                    } else {
+                        console.error('7. localStorage write failed verification: Stored data does NOT match in-memory archive after deletion.');
+                    }
+                } catch (e) {
+                    console.error('Error saving mahjongGameHistoryArchive to localStorage:', e);
+                }
+                
+                // Show success message before closing modal
+                showMessage('历史记录删除成功！', 'success');
+                // Close the history modal after a short delay to allow message to be seen
+                setTimeout(() => {
+                    hideHistoryModal();
+                    renderPastGamesList(); // Re-render the list after modal is hidden
+                }, 500); // 0.5 second delay
+                
+                selectAllHistoryCheckbox.checked = false; // Reset select all
+                updateDeleteButtonState(); // Update button state
+                console.log('--- Deletion process finished ---');
+            } else {
+                console.log('Deletion cancelled by user.');
+            }
+        }
+
+
+        // --- Display Detailed Game History Modal ---
+        function showDetailedGameHistory(gameId) {
+            const gameSummary = mahjongGameHistoryArchive.find(game => game.id === gameId);
+
+            if (!gameSummary) {
+                showMessage('未找到该历史牌局的详细信息。', 'error');
+                return;
+            }
+
+            detailedHistoryTitle.textContent = `${new Date(gameSummary.timestamp).toLocaleDateString('zh-CN', { year: 'numeric', month: 'numeric', day: 'numeric' })} - 牌局详情`;
+
+            // Render round-by-round history
+            detailedRoundHistoryHeader.innerHTML = '';
+            detailedRoundHistoryBody.innerHTML = '';
+
+            // Add static headers
+            const roundNumTh = document.createElement('th');
+            roundNumTh.textContent = '局数';
+            detailedRoundHistoryHeader.appendChild(roundNumTh);
+            const typeThElement = document.createElement('th'); 
+            typeThElement.textContent = '类型';
+            detailedRoundHistoryHeader.appendChild(typeThElement);
+
+            const winnerTh = document.createElement('th');
+            winnerTh.textContent = '胡牌玩家';
+            detailedRoundHistoryHeader.appendChild(winnerTh);
+            const chongPlayerTh = document.createElement('th');
+            chongPlayerTh.textContent = '出冲玩家';
+            detailedRoundHistoryHeader.appendChild(chongPlayerTh);
+
+            // Add dynamic player name headers based on players active in THIS game
+            gameSummary.activePlayersAtEnd.forEach(player => {
+                const th = document.createElement('th');
+                th.textContent = player;
+                detailedRoundHistoryHeader.appendChild(th);
+            });
+
+            // Add a row for final scores
+            const finalScoresRow = document.createElement('tr');
+            finalScoresRow.className = 'bg-gray-100 font-bold'; // Style for final scores row
+            
+            // Empty cells for static headers
+            const colspanVal = 4; // For '局数', '类型', '胡牌玩家', '出冲玩家'
+            const finalScoresLabelTd = document.createElement('td');
+            finalScoresLabelTd.setAttribute('colspan', colspanVal);
+            finalScoresLabelTd.className = 'text-right pr-4 py-2'; // Align text to the right
+            finalScoresLabelTd.textContent = '最终总分:';
+            finalScoresRow.appendChild(finalScoresLabelTd);
+
+            // Populate final scores for each player
+            gameSummary.activePlayersAtEnd.forEach(player => {
+                // Use finalScores if available (for completed games), otherwise use playerScores (for in-progress games)
+                const scoreSource = gameSummary.status === 'completed' ? gameSummary.finalScores : gameSummary.playerScores;
+                const score = scoreSource[player] !== undefined ? scoreSource[player] : 0;
+                const td = document.createElement('td');
+                td.className = `py-2 ${score >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                td.textContent = score;
+                finalScoresRow.appendChild(td);
+            });
+            detailedRoundHistoryBody.appendChild(finalScoresRow);
+
+
+            // Populate table body with round data (in reverse order)
+            gameSummary.detailedHistory.slice().reverse().forEach(round => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${round.roundNum}</td>
+                    <td>${getModeDisplayName(round.mode)}</td>
+                    <td>${Array.isArray(round.winners) ? round.winners.join(', ') : round.winners}</td>
+                    <td>${round.chongPlayer || '-'}</td>
+                `;
+                gameSummary.activePlayersAtEnd.forEach(player => { // Use active players from this specific game summary
+                    const change = round.changes[player] !== undefined ? round.changes[player] : 0;
+                    const td = document.createElement('td');
+                    td.className = `${change >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                    td.textContent = change > 0 ? `+${change}` : change;
+                    tr.appendChild(td);
+                });
+                detailedRoundHistoryBody.appendChild(tr);
+            });
+
+            if (gameSummary.detailedHistory.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="${4 + gameSummary.activePlayersAtEnd.length}" class="text-gray-500 py-4">暂无本局详细记录</td>`;
+                detailedRoundHistoryBody.appendChild(tr);
+            }
+
+            historyModal.classList.add('hidden'); // Hide history list modal
+            detailedHistoryModal.classList.remove('hidden'); // Show detailed history modal
+        }
+
+        // --- Hide Detailed History Modal ---
+        function hideDetailedHistoryModal() {
+            detailedHistoryModal.classList.add('hidden');
+            historyModal.classList.remove('hidden'); // Show history list modal again
+        }
+
+
+        // --- Display Query Battle Modal ---
+        function showQueryBattleModal() {
+            queryBattleModal.classList.remove('hidden');
+            renderRoundHistoryTable();
+        }
+
+        // --- Hide Query Battle Modal ---
+        function hideQueryBattleModal() {
+            queryBattleModal.classList.add('hidden');
+        }
+
+        // --- Render Round History Table (for current game's query battle) ---
+        function renderRoundHistoryTable() {
+            roundHistoryTableBody.innerHTML = '';
+            
+            const tableHeadRow = roundHistoryTableBody.closest('table').querySelector('thead tr');
+            tableHeadRow.innerHTML = `<th>局数</th><th>类型</th><th>胡牌玩家</th><th>出冲玩家</th>`;
+            activePlayers.forEach(player => {
+                const th = document.createElement('th');
+                th.textContent = player;
+                tableHeadRow.appendChild(th);
+            });
+
+
+            for (let i = gameRoundHistory.length - 1; i >= 0; i--) {
+                const round = gameRoundHistory[i];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${round.roundNum}</td>
+                    <td>${getModeDisplayName(round.mode)}</td>
+                    <td>${Array.isArray(round.winners) ? round.winners.join(', ') : round.winners}</td>
+                    <td>${round.chongPlayer || '-'}</td>
+                `;
+                activePlayers.forEach(player => {
+                    const change = round.changes[player] !== undefined ? round.changes[player] : 0;
+                    const td = document.createElement('td');
+                    td.className = `${change >= 0 ? 'text-green-600' : 'text-red-600'}`;
+                    td.textContent = change > 0 ? `+${change}` : change;
+                    tr.appendChild(td);
+                });
+                roundHistoryTableBody.appendChild(tr);
+            }
+            if (gameRoundHistory.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="${4 + activePlayers.length}" class="text-gray-500 py-4">暂无历史记录</td>`;
+                roundHistoryTableBody.appendChild(tr);
+            }
+        }
+
+        // Get display name for mode
+        function getModeDisplayName(mode) {
+            switch (mode) {
+                case 'zimo': return '自摸';
+                case 'chong': return '出冲';
+                case 'sihuatongse': return '四花同色';
+                default: return mode;
+            }
+        }
+
+
+        // --- Display End Game Modal ---
+        function showEndGameModal() {
+            finalScoresList.innerHTML = '';
+            const sortedPlayers = Object.entries(playerScores).sort(([, scoreA], [, scoreB]) => scoreB - scoreA);
+            sortedPlayers.forEach(([player, score]) => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between py-2 px-3 border-b border-gray-100 last:border-b-0';
+                li.innerHTML = `
+                    <span class="text-gray-800 text-lg">${player}</span>
+                    <span class="font-bold text-xl ${score >= 0 ? 'text-green-600' : 'text-red-600'}">${score}</span>
+                `;
+                finalScoresList.appendChild(li);
+            });
+
+            finalZimoCount.textContent = zimoCount;
+            finalChongCount.textContent = chongCount;
+            finalSihuaCount.textContent = sihuaCount;
+
+            endGameModal.classList.remove('hidden');
+        }
+
+        // --- Confirm End Game and Return to Home ---
+        function confirmEndGameAndGoHome() {
+            console.log('confirmEndGameAndGoHome called. Starting finalization and redirection...');
+            if (currentActiveGameId) {
+                const gameIndex = mahjongGameHistoryArchive.findIndex(game => game.id === currentActiveGameId);
+                if (gameIndex !== -1) {
+                    console.log('Found active game in archive for finalization:', mahjongGameHistoryArchive[gameIndex]);
+                    // Finalize the game in the archive
+                    mahjongGameHistoryArchive[gameIndex].finalScores = { ...playerScores };
+                    mahjongGameHistoryArchive[gameIndex].roundsPlayed = gameRoundHistory.length;
+                    mahjongGameHistoryArchive[gameIndex].zimoCount = zimoCount;
+                    mahjongGameHistoryArchive[gameIndex].chongCount = chongCount;
+                    mahjongGameHistoryArchive[gameIndex].sihuaCount = sihuaCount;
+                    mahjongGameHistoryArchive[gameIndex].detailedHistory = [...gameRoundHistory]; // Ensure final history is saved
+                    mahjongGameHistoryArchive[gameIndex].status = 'completed'; // Mark as completed
+                    mahjongGameHistoryArchive[gameIndex].timestamp = new Date().toISOString(); // Final timestamp
+                    console.log('Game marked as completed and finalized in archive (in memory):', mahjongGameHistoryArchive[gameIndex]);
+                } else {
+                    console.warn('currentActiveGameId set, but game not found in archive for finalization:', currentActiveGameId);
+                }
+            } else {
+                console.warn('No currentActiveGameId, skipping game finalization in archive.');
+            }
+
+            try {
+                // Save the updated archive
+                localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
+                console.log('Attempted to save mahjongGameHistoryArchive to localStorage.');
+                const storedDataAfterSave = localStorage.getItem('mahjongGameHistoryArchive');
+                console.log('localStorage content immediately after save attempt:', storedDataAfterSave);
+                if (storedDataAfterSave === JSON.stringify(mahjongGameHistoryArchive)) {
+                    console.log('localStorage write verified: Data matches in-memory archive.');
+                } else {
+                    console.error('localStorage write failed verification: Stored data does NOT match in-memory archive.');
+                }
+            } catch (e) {
+                console.error('Error saving mahjongGameHistoryArchive to localStorage:', e);
+            }
+
+            // Clear all current game data and the in-progress game flag
+            localStorage.removeItem('currentGameSettings');
+            localStorage.removeItem('activePlayers');
+            localStorage.removeItem('mahjongPlayerScores');
+            localStorage.removeItem('mahjongLastRoundChanges');
+            localStorage.removeItem('mahjongGameRoundHistory');
+            localStorage.removeItem('mahjongZimoCount');
+            localStorage.removeItem('mahjongChongCount');
+            localStorage.removeItem('mahjongSihuaCount');
+            localStorage.removeItem('mahjongInProgressGameId'); // Clear in-progress game ID as it's now archived and completed
+            currentActiveGameId = null; // Explicitly clear in-memory as well
+            console.log('Cleared current game data from localStorage and in-memory. currentActiveGameId:', currentActiveGameId);
+
+            // Add a small timeout before redirection to ensure all synchronous tasks complete
+            // This is a common pattern to ensure UI updates or synchronous storage operations finish.
+            setTimeout(() => {
+                console.log('Attempting to navigate to index.html using window.location.replace(). THIS IS THE REDIRECT POINT.');
+                window.location.replace('index.html'); // Use replace to avoid adding to history
+            }, 50); // Reduced delay to 50ms for potentially faster redirection
+        }
+
+        // Removed Debug Info Modal Functions
+        // function showDebugInfoModal() {
+        //     const rawData = localStorage.getItem('mahjongGameHistoryArchive');
+        //     if (rawData) {
+        //         try {
+        //             const parsedData = JSON.parse(rawData);
+        //             debugInfoContent.textContent = JSON.stringify(parsedData, null, 2); // Pretty print JSON
+        //         } catch (e) {
+        //             debugInfoContent.textContent = `Error parsing JSON from localStorage: ${e.message}\nRaw data:\n${rawData}`;
+        //         }
+        //     } else {
+        //         debugInfoContent.textContent = 'localStorage 中没有找到 "mahjongGameHistoryArchive" 数据。';
+        //     }
+        //     debugModal.classList.remove('hidden');
+        // }
+
+        // function hideDebugModal() {
+        //     debugModal.classList.add('hidden');
+        // }
+
+
+        // --- Event Listeners ---
+        zimoBtn.addEventListener('click', () => showScoreModal('zimo'));
+        chongBtn.addEventListener('click', () => showScoreModal('chong'));
+        sihuatongseBtn.addEventListener('click', () => showScoreModal('sihuatongse'));
+        cancelScoreBtn.addEventListener('click', hideScoreModal);
+        confirmScoreBtn.addEventListener('click', calculateAndApplyScore);
+
+        // Bottom function button events
+        historyBtn.addEventListener('click', showHistoryModal);
+        closeHistoryModalBtn.addEventListener('click', hideHistoryModal); // Close history list modal
+        closeDetailedHistoryModalBtn.addEventListener('click', hideDetailedHistoryModal); // Close detailed history modal
+        queryBattleBtn.addEventListener('click', showQueryBattleModal);
+        closeQueryBattleModalBtn.addEventListener('click', hideQueryBattleModal); // Close query battle modal
+        endGameBtn.addEventListener('click', showEndGameModal);
+        confirmEndGameBtn.addEventListener('click', confirmEndGameAndGoHome); // Confirm end game
+
+        // New history deletion event listeners
+        selectAllHistoryCheckbox.addEventListener('change', handleSelectAllChange);
+        deleteSelectedHistoryBtn.addEventListener('click', deleteSelectedHistory);
+
+        // Removed Debug button events
+        // debugInfoBtn.addEventListener('click', showDebugInfoModal);
+        // closeDebugModalBtn.addEventListener('click', hideDebugModal);
+
+        // --- Navigation Confirmation (Swipe Back) ---
+        // Add a dummy state to history when scoring.html loads.
+        // This ensures that the first 'popstate' event (from a back gesture)
+        // doesn't immediately navigate away, allowing us to intercept.
+        window.addEventListener('load', () => {
+            // Only push state if we're not already at the root or if it's not a direct load from index.html
+            // This is a heuristic to avoid pushing multiple states if user navigates back and forth
+            if (window.location.pathname.endsWith('/scoring.html')) {
+                history.pushState({ page: 'scoring' }, '', 'scoring.html');
+                console.log('Pushed dummy state for scoring.html on load.');
+            }
+        });
+
+        window.addEventListener('popstate', async (event) => {
+            console.log('Popstate event triggered. Event state:', event.state);
+            // Check if we are trying to navigate away from scoring.html
+            // And if the current game is in progress (activePlayers.length > 0)
+            if (activePlayers.length > 0 && currentActiveGameId !== null) {
+                // Do NOT re-push state immediately here. Let the modal handle the decision.
+                console.log('Active game detected during popstate. Showing confirmation.');
+
+                const confirmLeave = await showCustomConfirmation(
+                    '结束当前牌局？',
+                    '检测到未完成的牌局，您确定要结束并返回主页吗？',
+                    '结束战斗', // Custom Yes text for swipe back
+                    '继续战斗'   // Custom No text for swipe back
+                );
+
+                if (confirmLeave) {
+                    console.log('User confirmed leaving from popstate. Calling confirmEndGameAndGoHome().');
+                    // If user confirms, call confirmEndGameAndGoHome to finalize and redirect
+                    confirmEndGameAndGoHome(); 
+                } else {
+                    console.log('User cancelled leaving from popstate. Re-pushing state to stay on current page.');
+                    // If user cancels, push the current state back onto the history stack
+                    // to prevent the browser from actually navigating back.
+                    history.pushState({ page: 'scoring' }, '', 'scoring.html');
+                    showMessage('已取消返回主页。', 'info');
+                }
+            } else {
+                console.log('No active game or popstate not related to leaving scoring.html. Allowing default navigation.');
+                // If no active game, or it's not a back navigation to index.html, allow default behavior.
+                // No action needed here, as the browser will proceed with its default popstate behavior.
+            }
+        });
+
+
+        // Auto-save on page unload or visibility change
+        // This is a fallback save, the primary "end game" logic is in confirmEndGameAndGoHome
+        window.addEventListener('beforeunload', saveGameData);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && activePlayers.length > 0) { // Only save if a game is in progress
+                saveGameData();
+            }
+        });
+
+        // Page load execution
+        window.onload = () => {
+            loadGameData();
+        };
+
+        // --- Service Worker Registration (PWA Core) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registration successful:', registration);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻将记分器 - 设置</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 设置 Inter 字体 -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* 浅灰色背景 */
+        }
+    </style>
+    <!-- PWA Manifest 文件 -->
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">麻将记分器</h1>
+
+        <!-- 基础设置区域 -->
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4 text-blue-800">基础设置</h2>
+            <div class="mb-4">
+                <label for="baseScore" class="block text-gray-700 text-sm font-bold mb-2">底分 (Base Score):</label>
+                <input type="number" id="baseScore" value="5" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+            </div>
+            <div class="mb-4">
+                <label for="flowerScore" class="block text-gray-700 text-sm font-bold mb-2">花分 (Flower Score):</label>
+                <input type="number" id="flowerScore" value="5" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+            </div>
+            <div class="mb-4">
+                <label for="laziScore" class="block text-gray-700 text-sm font-bold mb-2">辣子 (Lazi Score):</label>
+                <input type="number" id="laziScore" value="100" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200">
+            </div>
+        </div>
+
+        <!-- 玩家管理区域 -->
+        <div class="mb-6 bg-green-50 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4 text-green-800">玩家管理</h2>
+            <p class="text-sm text-gray-500 mb-4">请填写玩家姓名，清空姓名即可移除玩家。</p>
+            <div id="playerListContainer" class="border border-gray-200 rounded-lg p-2 bg-white">
+                <ul id="playerList" class="list-none p-0 m-0">
+                    <!-- 玩家输入槽位将在这里动态添加 -->
+                </ul>
+            </div>
+            <!-- 移除了添加新玩家的输入框和按钮 -->
+        </div>
+
+        <!-- 开始记分按钮 -->
+        <button id="startGameBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105">
+            开始记分
+        </button>
+
+        <!-- 消息提示框 -->
+        <div id="messageBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center" role="alert"></div>
+    </div>
+
+    <script>
+        // 全局数据存储
+        let settings = {
+            baseScore: 5,   // 默认底分
+            flowerScore: 5, // 默认花分
+            laziScore: 100  // 默认辣子
+        };
+
+        // 这些是默认的玩家槽位标签
+        const DEFAULT_PLAYER_PLACEHOLDERS = ['东', '南', '西', '北', '中', '发', '白'];
+
+        // 这个数组将管理每个玩家输入行的状态
+        // 每个元素是 { id: string, defaultLabel?: string, name: string }
+        // name 存储用户在输入框中填写的实际姓名
+        let playerInputSlots = [];
+
+        // 获取 DOM 元素
+        const baseScoreInput = document.getElementById('baseScore');
+        const flowerScoreInput = document.getElementById('flowerScore');
+        const laziScoreInput = document.getElementById('laziScore');
+        const playerList = document.getElementById('playerList');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const messageBox = document.getElementById('messageBox');
+
+        // --- 消息提示函数 ---
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'text-blue-700');
+            }
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000); // 3秒后隐藏
+        }
+
+        // --- 生成唯一ID (虽然现在不用于添加新玩家，但保留以防未来扩展) ---
+        function generateUniqueId() {
+            return 'player-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        }
+
+        // --- 数据加载与保存 (使用 localStorage) ---
+        function loadData() {
+            const savedSettings = localStorage.getItem('mahjongSettings');
+            const savedPlayerInputSlots = localStorage.getItem('mahjongPlayerInputSlots');
+
+            if (savedSettings) {
+                settings = JSON.parse(savedSettings);
+                baseScoreInput.value = settings.baseScore;
+                flowerScoreInput.value = settings.flowerScore;
+                laziScoreInput.value = settings.laziScore;
+            }
+
+            if (savedPlayerInputSlots) {
+                playerInputSlots = JSON.parse(savedPlayerInputSlots);
+                // 确保加载的数据中包含 defaultLabel (如果它是默认槽位)
+                // 并且处理旧数据格式没有defaultLabel的情况
+                playerInputSlots.forEach(slot => {
+                    if (slot.defaultLabel === undefined && slot.id.startsWith('default-')) {
+                        const index = parseInt(slot.id.split('-')[1]);
+                        if (index < DEFAULT_PLAYER_PLACEHOLDERS.length) {
+                            slot.defaultLabel = DEFAULT_PLAYER_PLACEHOLDERS[index];
+                        }
+                    }
+                });
+                // 过滤掉非默认槽位，因为现在不能添加了
+                playerInputSlots = playerInputSlots.filter(slot => slot.defaultLabel !== undefined);
+                // 确保至少有默认的7个槽位
+                if (playerInputSlots.length < DEFAULT_PLAYER_PLACEHOLDERS.length) {
+                    DEFAULT_PLAYER_PLACEHOLDERS.forEach((label, index) => {
+                        if (!playerInputSlots.some(slot => slot.id === `default-${index}`)) {
+                            playerInputSlots.push({
+                                id: `default-${index}`,
+                                defaultLabel: label,
+                                name: ''
+                            });
+                        }
+                    });
+                    // 重新排序以确保默认槽位顺序正确
+                    playerInputSlots.sort((a, b) => {
+                        const idA = a.id.startsWith('default-') ? parseInt(a.id.split('-')[1]) : Infinity;
+                        const idB = b.id.startsWith('default-') ? parseInt(b.id.split('-')[1]) : Infinity;
+                        return idA - idB;
+                    });
+                }
+
+            } else {
+                // 如果没有保存的玩家数据，则初始化为默认的7个玩家槽位
+                DEFAULT_PLAYER_PLACEHOLDERS.forEach((label, index) => {
+                    playerInputSlots.push({
+                        id: `default-${index}`, // 使用固定ID方便识别默认槽位
+                        defaultLabel: label,
+                        name: '' // 默认为空，等待用户输入
+                    });
+                });
+            }
+            renderPlayerList();
+        }
+
+        function saveData() {
+            localStorage.setItem('mahjongSettings', JSON.stringify(settings));
+            localStorage.setItem('mahjongPlayerInputSlots', JSON.stringify(playerInputSlots));
+        }
+
+        // --- 玩家列表渲染 ---
+        function renderPlayerList() {
+            playerList.innerHTML = ''; // 清空现有列表
+            if (playerInputSlots.length === 0) {
+                playerList.innerHTML = '<li class="text-gray-500 text-center py-2">暂无玩家</li>';
+                return;
+            }
+
+            playerInputSlots.forEach((slot) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-center py-2 px-3 border-b border-gray-100 last:border-b-0';
+                li.dataset.slotId = slot.id; // 将槽位ID存储在li元素上
+
+                // 默认标签（如“东:”）
+                const defaultLabelSpan = document.createElement('span');
+                defaultLabelSpan.className = 'text-gray-600 mr-2 min-w-8 text-right'; // 最小宽度和右对齐
+                defaultLabelSpan.textContent = `${slot.defaultLabel || ''}:`; // 确保即使没有defaultLabel也显示冒号或空
+                li.appendChild(defaultLabelSpan);
+
+
+                // 玩家姓名输入框
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = slot.name; // 绑定槽位中的姓名数据
+                nameInput.placeholder = '输入玩家姓名';
+                nameInput.className = 'player-name-input shadow appearance-none border rounded-lg flex-grow py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200';
+                nameInput.dataset.slotId = slot.id; // 存储槽位ID，方便事件处理
+
+                li.appendChild(nameInput);
+                playerList.appendChild(li);
+            });
+
+            // 重新绑定事件监听器，因为DOM元素被重新创建了
+            document.querySelectorAll('.player-name-input').forEach(input => {
+                input.addEventListener('input', (event) => {
+                    const slotId = event.target.dataset.slotId;
+                    const slot = playerInputSlots.find(s => s.id === slotId);
+                    if (slot) {
+                        slot.name = event.target.value.trim();
+                    }
+                });
+                input.addEventListener('blur', (event) => {
+                    const slotId = event.target.dataset.slotId;
+                    const slotIndex = playerInputSlots.findIndex(s => s.id === slotId);
+                    if (slotIndex !== -1) {
+                        const newName = event.target.value.trim();
+                        
+                        // 检查新名称是否已存在于其他已填写的玩家槽位中
+                        const currentFilledNames = new Set(playerInputSlots.filter((s, idx) => idx !== slotIndex && s.name !== '').map(s => s.name));
+                        if (currentFilledNames.has(newName)) {
+                            showMessage(`玩家姓名 "${newName}" 已存在！请使用其他名称。`, 'error');
+                            event.target.value = playerInputSlots[slotIndex].name; // 恢复旧名称
+                        } else {
+                            playerInputSlots[slotIndex].name = newName;
+                            if (newName === '') {
+                                showMessage('玩家姓名已清空，该玩家将不计入游戏。', 'info');
+                            } else {
+                                showMessage(`玩家姓名已更新为 "${newName}"`, 'success');
+                            }
+                        }
+                        saveData(); // 失去焦点时保存数据
+                    }
+                });
+                input.addEventListener('keypress', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); // 阻止回车键换行
+                        event.target.blur(); // 触发失去焦点事件来保存
+                    }
+                });
+            });
+        }
+
+        // --- 事件监听器 ---
+
+        // 基础设置输入框变化时更新 settings 对象并保存
+        baseScoreInput.addEventListener('input', (e) => {
+            settings.baseScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+        flowerScoreInput.addEventListener('input', (e) => {
+            settings.flowerScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+        laziScoreInput.addEventListener('input', (e) => {
+            settings.laziScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+
+        // 移除了添加新玩家按钮的事件监听器
+
+        // 开始记分按钮点击事件
+        startGameBtn.addEventListener('click', () => {
+            // 收集所有已填写的、非空的、唯一的玩家姓名
+            const activePlayersForGame = [];
+            const collectedNames = new Set(); // 使用 Set 来确保唯一性
+
+            playerInputSlots.forEach(slot => {
+                const name = slot.name.trim();
+                if (name && !collectedNames.has(name)) {
+                    activePlayersForGame.push(name);
+                    collectedNames.add(name);
+                }
+            });
+
+            if (activePlayersForGame.length < 2) {
+                showMessage('请至少填写2位玩家才能开始记分！', 'error');
+                return;
+            }
+
+            // 将活跃玩家列表和设置保存到 localStorage，供记分页面使用
+            localStorage.setItem('activePlayers', JSON.stringify(activePlayersForGame));
+            localStorage.setItem('currentGameSettings', JSON.stringify(settings));
+
+            // 跳转到记分页面
+            window.location.href = 'scoring.html';
+        });
+
+        // 页面加载时执行
+        window.onload = () => {
+            loadData(); // 加载之前保存的数据或初始化默认槽位
+        };
+
+        // --- Service Worker 注册 (PWA 核心) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // 确保 Service Worker 路径的正确性
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker 注册成功:', registration);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker 注册失败:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
