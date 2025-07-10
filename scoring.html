@@ -133,6 +133,7 @@
         .score-table th:first-child,
         .score-table td:first-child {
             white-space: normal; /* Allow normal wrapping */
+            min-width: 4rem; /* Added: Ensure minimum width for player name column */
         }
     </style>
     <!-- PWA Manifest file -->
@@ -227,7 +228,7 @@
                     <div class="flex justify-between gap-4 mb-4 items-start">
                         <!-- Flower Count Input -->
                         <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                            <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量<br>:</label> <!-- Forced 2 lines -->
+                            <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌<br>数量:</label> <!-- Forced 2 lines -->
                             <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                         </div>
 
