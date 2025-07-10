@@ -22,7 +22,7 @@
             background-color: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Align to top */
             z-index: 1000;
         }
         /* Modal content */
@@ -37,6 +37,7 @@
             min-height: 250px; /* Added: Ensure a minimum height for all modals */
             display: flex; /* Use flexbox for layout */
             flex-direction: column; /* Stack children vertically */
+            margin-top: 4rem; /* Add margin from top to push it down */
         }
         /* Battle summary modal content, potentially wider */
         .battle-summary-modal-content {
@@ -129,8 +130,11 @@
         }
 
         /* For Chong table player name wrapping */
+        .score-table th:first-child,
         .score-table td:first-child { /* Target the first column (player name) */
             word-break: break-word; /* Break long words */
+            max-width: 80px; /* Constrain width to encourage wrapping */
+            white-space: normal; /* Allow normal wrapping */
         }
     </style>
     <!-- PWA Manifest file -->
@@ -216,13 +220,13 @@
                     <!-- Winner Player Selection (Clickable Buttons) - for Zimo/Sihuatongse -->
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" id="commonWinnerLabel">胡牌玩家 (点击选择):</label>
-                        <div id="winnerSelectionContainer" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
+                        <div id="winnerSelectionContainer" class="flex flex-nowrap gap-2 border border-gray-300 rounded-lg p-2 overflow-x-auto">
                             <!-- Player selection buttons will be dynamically added here -->
                         </div>
                     </div>
 
                     <!-- Group for Flower, Fan, Multiplier -->
-                    <div class="flex flex-wrap justify-between gap-4 mb-4 items-start"> <!-- Added items-start for label alignment -->
+                    <div class="flex justify-between gap-4 mb-4 items-start"> <!-- Removed flex-wrap, added items-start for label alignment -->
                         <!-- Flower Count Input -->
                         <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌数量:</label>
@@ -231,13 +235,13 @@
 
                         <!-- Fan Count Input -->
                         <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                            <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label> <!-- Removed <br> -->
+                            <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数<br>(原数*2**番数):</label> <!-- Re-added <br> -->
                             <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                         </div>
 
                         <!-- Multiplier Input -->
                         <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                            <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label> <!-- Removed <br> -->
+                            <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍<br>(原数*(倍数+1)):</label> <!-- Re-added <br> -->
                             <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric">
                         </div>
                     </div>
@@ -839,7 +843,8 @@
             playersToRender.forEach(player => {
                 const playerBtn = document.createElement('button');
                 playerBtn.type = 'button'; // Prevent button from submitting form
-                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200';
+                // Added text-sm, whitespace-nowrap, min-w-0 for single-line display and shrinking
+                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 text-sm whitespace-nowrap min-w-0';
                 playerBtn.textContent = player;
                 playerBtn.dataset.playerName = player; // Store player name
 
