@@ -1806,7 +1806,7 @@
             }
         });
 
-        window.addEventListener('popstate', async (event) => {
+        window.addEventListener('popstate', (event) => { // Removed 'async' here
             console.log('Popstate event triggered. Event state:', event.state);
             // Check if we are trying to navigate away from scoring.html
             // And if the current game is in progress (activePlayers.length > 0)
@@ -1816,26 +1816,31 @@
                 // This effectively "cancels" the browser's back navigation.
                 history.pushState({ page: 'scoring' }, '', 'scoring.html');
                 
-                console.log('Showing confirmation modal after re-pushing state.');
-                const confirmLeave = await showCustomConfirmation(
+                console.log('Showing confirmation modal without awaiting.');
+                showCustomConfirmation( // No 'await'
                     '结束当前牌局？',
                     '检测到未完成的牌局，您确定要结束并返回主页吗？',
                     '结束战斗', // Custom Yes text for swipe back
                     '继续战斗'   // Custom No text for swipe back
-                );
-
-                if (confirmLeave) {
-                    console.log('User confirmed leaving from popstate. Calling confirmEndGameAndGoHome().');
-                    // If user confirms, call confirmEndGameAndGoHome to finalize and redirect
-                    confirmEndGameAndGoHome(); 
-                } else {
-                    console.log('User cancelled leaving from popstate. Attempting to force forward navigation.');
-                    // User cancelled, so we want to stay on scoring.html.
-                    // history.pushState was already called at the start of popstate to "cancel" the back.
-                    // Now, explicitly try to move forward again to the current page.
-                    history.forward(); // This might force the browser back to scoring.html
-                    showMessage('已取消返回主页。', 'info');
-                }
+                ).then(confirmLeave => { // Use .then() to handle the promise resolution
+                    if (confirmLeave) {
+                        console.log('User confirmed leaving from popstate. Calling confirmEndGameAndGoHome().');
+                        // If user confirms, call confirmEndGameAndGoHome to finalize and redirect
+                        confirmEndGameAndGoHome(); 
+                    } else {
+                        console.log('User cancelled leaving from popstate. Attempting to force forward navigation.');
+                        // User cancelled, so we want to stay on scoring.html.
+                        // history.pushState was already called at the start of popstate to "cancel" the back.
+                        // Now, explicitly try to move forward again to the current page.
+                        history.forward(); // This might force the browser back to scoring.html
+                        showMessage('已取消返回主页。', 'info');
+                    }
+                }).catch(error => {
+                    console.error('Error during popstate confirmation:', error);
+                    // Fallback in case of error, maybe still force forward or just show error
+                    history.forward();
+                    showMessage('处理返回操作时出错。', 'error');
+                });
             } else {
                 console.log('No active game or popstate not related to leaving scoring.html. Allowing default navigation.');
                 // If no active game, or it's not a back navigation to index.html, allow default behavior.
