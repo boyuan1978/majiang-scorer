@@ -236,8 +236,7 @@
                 inputDiv.className = 'flex-1'; // Ensure input takes its share of space
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
-                // 默认显示用户输入的姓名，如果为空则显示空字符串
-                nameInput.value = slot.name; 
+                nameInput.value = slot.name; // 默认显示用户输入的姓名，如果为空则为空字符串
                 nameInput.placeholder = slot.defaultLabel; // 占位符显示默认标签
                 nameInput.className = 'player-name-input shadow appearance-none border rounded-lg w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200';
                 nameInput.dataset.slotId = slot.id; // 存储槽位ID，方便事件处理
@@ -360,8 +359,8 @@
             }
 
             // 将活跃玩家列表和设置保存到 localStorage，供记分页面使用
-            localStorage.setItem('currentGameSettings', JSON.stringify(settings));
             localStorage.setItem('activePlayers', JSON.stringify(activePlayersForGame));
+            localStorage.setItem('currentGameSettings', JSON.stringify(settings));
 
             // 跳转到记分页面
             window.location.href = 'scoring.html';
