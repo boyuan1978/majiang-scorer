@@ -64,6 +64,15 @@
             cursor: pointer;
             transition: background-color 0.2s, color 0.2s;
             border: 1px solid #cbd5e0; /* Add border for better visual separation */
+            /* Added for compact display and dynamic sizing */
+            flex-grow: 1; /* Allow buttons to grow */
+            flex-shrink: 1; /* Allow buttons to shrink */
+            min-width: 0; /* Allow buttons to shrink below content size */
+            white-space: nowrap; /* Prevent text wrapping inside button */
+            overflow: hidden; /* Hide overflow text */
+            text-overflow: ellipsis; /* Show ellipsis for overflow text */
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 0.75rem; /* py-2 px-3 */
         }
         .player-selection-item.selected {
             background-color: #3B82F6; /* Tailwind blue-500 */
@@ -83,6 +92,16 @@
             border-radius: 0.25rem;
             background-color: #f8fafc; /* Tailwind gray-50 */
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* Subtle inner shadow */
+        }
+        /* Specific style for player selection containers to allow wrapping */
+        .player-selection-container-flex {
+            display: flex;
+            flex-wrap: wrap; /* Allow items to wrap to the next line */
+            gap: 0.5rem; /* Space between items */
+            border: 1px solid #cbd5e0;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            overflow-x: hidden; /* Hide horizontal scroll if items wrap */
         }
         .score-table td {
             vertical-align: middle; /* Center content vertically in table cells */
@@ -211,16 +230,18 @@
                 
                 <!-- New flex container for Chong Player Select and Winner Selection -->
                 <div id="chongTopSection" class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4 hidden">
-                    <!-- Chong Player Selection -->
-                    <div id="chongPlayerSelectDiv" class="flex-1">
-                        <label for="chongPlayerSelect" class="block text-gray-700 text-sm font-bold mb-2">冲头:</label>
-                        <select id="chongPlayerSelect" class="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"></select>
+                    <!-- Chong Player Selection (冲头) -->
+                    <div id="chongPlayerSelectionWrapper" class="flex-1">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">冲头:</label>
+                        <div id="chongPlayerSelectionButtons" class="player-selection-container-flex">
+                            <!-- Chong Player selection buttons will be dynamically added here -->
+                        </div>
                     </div>
 
-                    <!-- Chong Winner Selection Buttons -->
+                    <!-- Chong Winner Selection Buttons (抓冲) -->
                     <div id="chongWinnerButtonsWrapper" class="flex-1">
                         <label class="block text-gray-700 text-sm font-bold mb-2">抓冲 (点击玩家姓名选择):</label>
-                        <div id="chongWinnerSelectionButtons" class="flex flex-wrap gap-2 border border-gray-300 rounded-lg p-2">
+                        <div id="chongWinnerSelectionButtons" class="player-selection-container-flex">
                             <!-- Selectable buttons for potential winners in Chong mode -->
                         </div>
                     </div>
@@ -231,7 +252,7 @@
                     <!-- Winner Player Selection (Clickable Buttons) - for Zimo/Sihuatongse -->
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2" id="commonWinnerLabel">胡牌玩家 (点击选择):</label>
-                        <div id="winnerSelectionContainer" class="flex flex-nowrap gap-2 border border-gray-300 rounded-lg p-2 overflow-x-auto">
+                        <div id="winnerSelectionContainer" class="player-selection-container-flex">
                             <!-- Player selection buttons will be dynamically added here -->
                         </div>
                     </div>
@@ -241,26 +262,26 @@
                         <!-- Flower Count Input -->
                         <div id="flowerCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="flowerCount" class="block text-gray-700 text-sm font-bold mb-2">花牌<br>数量:</label> <!-- Forced 2 lines -->
-                            <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
+                            <input type="number" id="flowerCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                         </div>
 
                         <!-- Fan Count Input -->
                         <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label>
-                            <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
+                            <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                         </div>
 
                         <!-- Multiplier Input -->
                         <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
                             <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label>
-                            <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
+                            <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                         </div>
                     </div>
 
                     <!-- Quantity Input for Sihuatongse -->
                     <div id="quantityDiv" class="mb-4 hidden">
                         <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">数量:</label>
-                        <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.select()" inputmode="numeric" pattern="[0-9]*">
+                        <input type="number" id="quantity" value="1" min="1" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                     </div>
 
                     <!-- Real-time Calculation Result Display for Zimo/Sihuatongse -->
@@ -424,6 +445,7 @@
         // Temporary storage for individual winner data in Chong mode
         // Key: playerName, Value: { flower: number, fan: number, multiplier: number, calculatedScore: number }
         let chongIndividualWinnerData = {}; 
+        let selectedChongPlayerName = null; // New: To store the single selected "冲头" player
 
         // Get DOM elements
         const displayBaseScore = document.getElementById('displayBaseScore');
@@ -450,9 +472,9 @@
         
         // New elements for Chong layout
         const chongTopSection = document.getElementById('chongTopSection'); // New container for冲头 and 抓冲 selections
-        const chongPlayerSelectDiv = document.getElementById('chongPlayerSelectDiv');
-        const chongPlayerSelect = document.getElementById('chongPlayerSelect');
-        const chongWinnerButtonsWrapper = document.getElementById('chongWinnerButtonsWrapper'); // New wrapper for 抓冲 buttons and label
+        const chongPlayerSelectionWrapper = document.getElementById('chongPlayerSelectionWrapper'); // Wrapper for 冲头 buttons and label
+        const chongPlayerSelectionButtons = document.getElementById('chongPlayerSelectionButtons'); // Container for 冲头 buttons
+        const chongWinnerButtonsWrapper = document.getElementById('chongWinnerButtonsWrapper'); // Wrapper for 抓冲 buttons and label
 
         const fanCountDiv = document.getElementById('fanCountDiv');
         const fanCountInput = document.getElementById('fanCount');
@@ -859,7 +881,7 @@
                 const playerBtn = document.createElement('button');
                 playerBtn.type = 'button'; // Prevent button from submitting form
                 // Added text-sm, whitespace-nowrap, min-w-0 for single-line display and shrinking
-                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 text-sm whitespace-nowrap min-w-0';
+                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg focus:outline-none focus:shadow-outline transition duration-200';
                 playerBtn.textContent = player;
                 playerBtn.dataset.playerName = player; // Store player name
 
@@ -897,32 +919,57 @@
             });
         }
 
-        // --- Populate Chong Player Select dropdown options ---
-        function populateChongPlayerSelectOptions() {
-            chongPlayerSelect.innerHTML = '';
+        // --- Render "冲头" player selection buttons ---
+        function renderChongPlayerSelectionButtons() {
+            chongPlayerSelectionButtons.innerHTML = ''; // Clear container
             activePlayers.forEach(player => {
-                const option = document.createElement('option');
-                option.value = player;
-                option.textContent = player;
-                chongPlayerSelect.appendChild(option);
+                const playerBtn = document.createElement('button');
+                playerBtn.type = 'button';
+                playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg focus:outline-none focus:shadow-outline transition duration-200';
+                playerBtn.textContent = player;
+                playerBtn.dataset.playerName = player;
+
+                playerBtn.addEventListener('click', (event) => {
+                    // Deselect all other "冲头" buttons
+                    document.querySelectorAll('#chongPlayerSelectionButtons .player-selection-item').forEach(btn => {
+                        btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+                    });
+                    // Select the clicked button
+                    event.target.classList.add('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                    event.target.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+
+                    selectedChongPlayerName = player; // Update the selected "冲头"
+                    
+                    // Re-render "抓冲" players, excluding the selected "冲头"
+                    renderPlayerSelectionButtons(chongWinnerSelectionButtons, selectedChongPlayerName);
+                    
+                    // Reset selected winners and the table for "抓冲"
+                    document.querySelectorAll('#chongWinnerSelectionButtons .player-selection-item').forEach(btn => {
+                        btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                        btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+                    });
+                    updateChongScoringTable(); // Re-render table with no winners initially
+                });
+                chongPlayerSelectionButtons.appendChild(playerBtn);
             });
-            if (activePlayers.length <= 1) {
-                showMessage('出冲模式至少需要2位玩家。', 'error');
+
+            // Automatically select the first player as "冲头" if no one is selected
+            if (!selectedChongPlayerName && activePlayers.length > 0) {
+                chongPlayerSelectionButtons.querySelector('.player-selection-item').click();
+            } else if (selectedChongPlayerName) {
+                // If a chong player was already selected (e.g., after re-opening modal), re-select it visually
+                const previouslySelectedBtn = chongPlayerSelectionButtons.querySelector(`[data-player-name="${selectedChongPlayerName}"]`);
+                if (previouslySelectedBtn) {
+                    previouslySelectedBtn.classList.add('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                    previouslySelectedBtn.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+                } else if (activePlayers.length > 0) {
+                    // If previously selected chong player is no longer active, select the first active player
+                    chongPlayerSelectionButtons.querySelector('.player-selection-item').click();
+                }
             }
         }
 
-        // --- Handle Chong Player Select change event ---
-        function handleChongPlayerChange() {
-            const selectedChongPlayer = chongPlayerSelect.value;
-            // Render selection buttons for potential winners (excluding chong player)
-            renderPlayerSelectionButtons(chongWinnerSelectionButtons, selectedChongPlayer);
-            // Reset selected winners and the table
-            document.querySelectorAll('#chongWinnerSelectionButtons .player-selection-item').forEach(btn => {
-                btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
-                btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
-            });
-            updateChongScoringTable(); // Re-render table with no winners initially
-        }
 
         // --- Update the Chong Scoring Table based on selected winners ---
         function updateChongScoringTable() {
@@ -963,7 +1010,7 @@
                 flowerInput.className = 'flower-input';
                 flowerInput.dataset.playerName = player;
                 flowerInput.addEventListener('input', updateChongIndividualScore);
-                flowerInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                flowerInput.addEventListener('focus', (event) => event.target.value = ''); // Changed to clear on focus
                 flowerInput.inputmode = 'numeric'; // Add this line
                 flowerInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 flowerTd.appendChild(flowerInput);
@@ -978,7 +1025,7 @@
                 fanInput.className = 'fan-input';
                 fanInput.dataset.playerName = player;
                 fanInput.addEventListener('input', updateChongIndividualScore);
-                fanInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                fanInput.addEventListener('focus', (event) => event.target.value = ''); // Changed to clear on focus
                 fanInput.inputmode = 'numeric'; // Add this line
                 fanInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 fanTd.appendChild(fanInput);
@@ -993,7 +1040,7 @@
                 multiplierInput.className = 'multiplier-input';
                 multiplierInput.dataset.playerName = player;
                 multiplierInput.addEventListener('input', updateChongIndividualScore);
-                multiplierInput.addEventListener('focus', (event) => event.target.select()); // Add focus event listener
+                multiplierInput.addEventListener('focus', (event) => event.target.value = ''); // Changed to clear on focus
                 multiplierInput.inputmode = 'numeric'; // Add this line
                 multiplierInput.pattern = '[0-9]*'; // Add pattern for better numeric keyboard hint
                 multiplierTd.appendChild(multiplierInput);
@@ -1106,6 +1153,11 @@
                 btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
                 btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
             });
+            // Reset player selection button visual states for chongPlayerSelectionButtons
+            document.querySelectorAll('#chongPlayerSelectionButtons .player-selection-item').forEach(btn => {
+                btn.classList.remove('selected', 'bg-blue-500', 'hover:bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-800');
+            });
 
 
             // Remove old event listeners to prevent duplicate bindings
@@ -1113,7 +1165,6 @@
             flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
             quantityInput.removeEventListener('input', updateCalculatedScoreDisplay); // New: remove quantity listener
-            chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
 
 
             // Hide all specific sections first
@@ -1148,12 +1199,10 @@
                 commonInputsContainer.classList.add('hidden'); // Hide common inputs for chong
                 quantityDiv.classList.add('hidden'); // Ensure hidden for chong
 
-                populateChongPlayerSelectOptions(); // Populate chong player select first
-                chongPlayerSelect.addEventListener('change', handleChongPlayerChange); // Add listener for chong player change
-
-                // Initial render of winner table, excluding the default selected chong player
-                handleChongPlayerChange(); // Call once to set initial state
-                // Note: Real-time calculation is now per-row in the table, so global display is hidden
+                // Render "冲头" player selection buttons
+                renderChongPlayerSelectionButtons();
+                // "抓冲" players are rendered when a "冲头" is selected (in renderChongPlayerSelectionButtons click handler)
+                // Initial render of winner table will happen via the initial "冲头" selection
             } else if (mode === 'sihuatongse') {
                 modalTitle.textContent = '四花同色结算';
                 commonInputsContainer.classList.remove('hidden'); // Show common inputs
@@ -1181,10 +1230,10 @@
             flowerCountInput.removeEventListener('input', updateCalculatedScoreDisplay);
             multiplierInput.removeEventListener('input', updateCalculatedScoreDisplay);
             quantityInput.removeEventListener('input', updateCalculatedScoreDisplay); // New: remove quantity listener
-            chongPlayerSelect.removeEventListener('change', handleChongPlayerChange);
 
-            // Clear chongIndividualWinnerData on modal close
+            // Clear chongIndividualWinnerData and selectedChongPlayerName on modal close
             chongIndividualWinnerData = {}; 
+            selectedChongPlayerName = null;
         }
 
         // --- Calculate and Apply Score Logic ---
@@ -1247,7 +1296,7 @@
                     calculationSuccessful = true; // Set flag
 
                 } else if (currentScoreMode === 'chong') {
-                    chongPlayer = chongPlayerSelect.value;
+                    chongPlayer = selectedChongPlayerName; // Use the new selectedChongPlayerName
                     selectedWinners = Object.keys(chongIndividualWinnerData); // Get winners from the table data
                     console.log('Chong: selectedWinners:', selectedWinners); // Debug log
                     console.log('Chong: chongPlayer:', chongPlayer); // Debug log
