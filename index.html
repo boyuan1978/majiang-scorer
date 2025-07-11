@@ -24,7 +24,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 500px; /* Increased max-width for better space utilization */
             flex-shrink: 0; /* 防止内容收缩 */
             overflow-y: auto; /* 允许内容垂直滚动 */
             max-height: calc(100vh - 2rem); /* 最大高度以适应屏幕，留出边距 */
@@ -52,15 +52,15 @@
         /* Player name input specific styles for dynamic font size */
         .player-name-input {
             text-align: center;
-            font-size: 0.9rem; /* Slightly smaller default font size for better fit */
+            font-size: 0.95rem; /* Slightly larger default font size */
             min-width: 0; /* Allow shrinking */
             flex-grow: 1; /* Allow growing */
-            padding-left: 0.25rem; /* Reduced padding for more text space */
-            padding-right: 0.25rem; /* Reduced padding for more text space */
+            padding-left: 0.2rem; /* Reduced padding for more text space */
+            padding-right: 0.2rem; /* Reduced padding for more text space */
         }
         /* Adjust font size for more players - can be even smaller if needed */
         .player-name-input-small {
-            font-size: 0.75rem; /* Even smaller font for more players */
+            font-size: 0.8rem; /* Smaller font for more players */
         }
         /* Player label (东, 南, 西, 北) specific styles */
         .player-label {
@@ -72,7 +72,14 @@
             white-space: nowrap; /* Prevent wrapping */
             overflow: hidden; /* Hide overflow */
             text-overflow: ellipsis; /* Show ellipsis */
-            font-size: 0.8rem; /* Slightly smaller than default for labels */
+            font-size: 0.85rem; /* Slightly larger than before for labels */
+        }
+        /* Ensure player input and label containers utilize space better */
+        #playerLabels, #playerInputs {
+            gap: 0.3rem; /* Reduced gap between player columns */
+        }
+        #playerListContainer {
+            padding: 0.5rem; /* Reduced padding for the container */
         }
     </style>
     <!-- PWA Manifest 文件 -->
@@ -245,7 +252,8 @@
                 nameInput.dataset.slotId = slot.id; // 存储槽位ID，方便事件处理
                 
                 // 根据玩家数量调整字体大小
-                if (playerInputSlots.length > 4) { // 假设超过4个玩家时开始缩小字体
+                // Adjusted logic for player name input font size
+                if (playerInputSlots.length >= 5) { // If 5 or more players, use smaller font
                     nameInput.classList.add('player-name-input-small');
                     labelDiv.classList.add('player-name-input-small'); // Labels also need to shrink
                 } else {
