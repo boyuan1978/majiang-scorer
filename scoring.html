@@ -65,9 +65,10 @@
             transition: background-color 0.2s, color 0.2s;
             border: 1px solid #cbd5e0; /* Add border for better visual separation */
             /* Added for compact display and dynamic sizing */
-            flex-grow: 0; /* Changed to 0 to prevent growing unnecessarily */
-            flex-shrink: 0; /* Changed to 0 to prevent shrinking below content */
+            flex-grow: 1; /* Allow growing */
+            flex-shrink: 1; /* Allow shrinking */
             min-width: 3.5rem; /* Min width to accommodate 2 characters + padding */
+            max-width: 4.5rem; /* Max width to prevent excessive growth */
             white-space: nowrap; /* Prevent text wrapping inside button */
             overflow: hidden; /* Hide overflow text */
             text-overflow: ellipsis; /* Show ellipsis for overflow text */
@@ -105,12 +106,12 @@
         /* Specific style for player selection containers to allow wrapping */
         .player-selection-container-flex {
             display: flex;
-            flex-wrap: nowrap; /* Changed to nowrap to keep items on one line */
+            flex-wrap: wrap; /* Changed to wrap to allow items to go to next line */
             gap: 0.2rem; /* Reduced space between items */
             border: 1px solid #cbd5e0;
             border-radius: 0.5rem;
             padding: 0.5rem;
-            overflow-x: auto; /* Allow horizontal scroll if items overflow */
+            overflow-x: hidden; /* Hide horizontal scroll, allow wrapping */
             justify-content: flex-start; /* Align items to the start when there's overflow */
         }
         .score-table td {
@@ -766,16 +767,16 @@
                     const gameToFinalizeIndex = mahjongGameHistoryArchive.findIndex(game => game.id === resumedGame.id);
                     if (gameToFinalizeIndex !== -1) {
                         const gameToFinalize = mahjongGameHistoryArchive[gameToFinalizeIndex];
-                        gameToFinalize.playerScores = { ...playerScores }; // Save current scores
-                        gameToFinalize.lastRoundChanges = { ...lastRoundChanges }; // Save last changes
-                        gameToFinalize.detailedHistory = [...gameRoundHistory]; // Save full history
-                        gameToFinalize.zimoCount = zimoCount;
-                        gameToFinalize.chongCount = chongCount;
-                        gameToFinalize.sihuaCount = sihuaCount;
+                        gameToFinalize.playerScores = { ...resumedGame.playerScores }; // Use resumedGame's scores
+                        gameToFinalize.lastRoundChanges = { ...resumedGame.lastRoundChanges }; // Use resumedGame's last changes
+                        gameToFinalize.detailedHistory = [...resumedGame.detailedHistory]; // Use resumedGame's full history
+                        gameToFinalize.zimoCount = resumedGame.zimoCount;
+                        gameToFinalize.chongCount = resumedGame.chongCount;
+                        gameToFinalize.sihuaCount = resumedGame.sihuaCount;
                         gameToFinalize.status = 'completed'; // Mark as completed
                         gameToFinalize.timestamp = new Date().toISOString(); // Update timestamp to completion time
-                        gameToFinalize.finalScores = { ...playerScores }; // Set final scores
-                        gameToFinalize.roundsPlayed = gameRoundHistory.length; // Set rounds played
+                        gameToFinalize.finalScores = { ...resumedGame.playerScores }; // Set final scores
+                        gameToFinalize.roundsPlayed = resumedGame.detailedHistory.length; // Set rounds played
                         console.log('loadGameData: Old in-progress game finalized in archive (in memory):', gameToFinalize);
                     } else {
                         console.error('loadGameData: Could not find game to finalize in archive after user chose not to resume.');
