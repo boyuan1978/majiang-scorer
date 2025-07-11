@@ -10,7 +10,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5; /* Light gray background */
+            background-color: #f0f2f5; /* 浅灰色背景 */
         }
         .modal-overlay {
             position: fixed;
@@ -32,110 +32,111 @@
             width: 90%;
             max-width: 400px;
         }
-        /* Style for player list items */
-        .player-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0; /* Tailwind gray-200 */
+        /* Player name input specific styles for dynamic font size */
+        .player-name-input {
+            text-align: center;
+            font-size: 1rem; /* Default font size */
+            min-width: 0; /* Allow shrinking */
+            flex-grow: 1; /* Allow growing */
         }
-        .player-list-item:last-child {
-            border-bottom: none;
+        /* Adjust font size for more players */
+        .player-name-input-small {
+            font-size: 0.8rem; /* Smaller font for more players */
+        }
+        /* Player label (东, 南, 西, 北) specific styles */
+        .player-label {
+            text-align: center;
+            font-weight: bold;
+            color: #4a5568; /* Tailwind gray-700 */
+            flex-grow: 1; /* Allow growing */
+            min-width: 0; /* Allow shrinking */
+            white-space: nowrap; /* Prevent wrapping */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Show ellipsis */
+            font-size: 0.9rem; /* Slightly smaller than default for labels */
         }
     </style>
-    <!-- PWA Manifest file -->
+    <!-- PWA Manifest 文件 -->
     <link rel="manifest" href="/manifest.json">
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
         <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">麻将记分器</h1>
 
-        <!-- 基础设置 -->
+        <!-- 分值设置区域 -->
         <div class="mb-6 bg-blue-50 p-4 rounded-lg">
-            <h2 class="text-xl font-semibold mb-4 text-blue-800">基础设置</h2>
-            <div class="space-y-4">
-                <div>
-                    <label for="baseScoreInput" class="block text-gray-700 text-sm font-bold mb-2">底分:</label>
-                    <input type="number" id="baseScoreInput" value="10" min="0" 
+            <h2 class="text-xl font-semibold mb-4 text-blue-800">分值设置</h2>
+            <div class="flex flex-wrap justify-around gap-4">
+                <div class="flex-1 min-w-[calc(33%-1rem)]">
+                    <label for="baseScore" class="block text-gray-700 text-sm font-bold mb-2">底分:</label>
+                    <input type="number" id="baseScore" value="5" min="0" 
                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"
                            inputmode="numeric" pattern="[0-9]*" onfocus="this.value = '';">
                 </div>
-                <div>
-                    <label for="flowerScoreInput" class="block text-gray-700 text-sm font-bold mb-2">花分:</label>
-                    <input type="number" id="flowerScoreInput" value="1" min="0" 
+                <div class="flex-1 min-w-[calc(33%-1rem)]">
+                    <label for="flowerScore" class="block text-gray-700 text-sm font-bold mb-2">花分:</label>
+                    <input type="number" id="flowerScore" value="5" min="0" 
                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"
                            inputmode="numeric" pattern="[0-9]*" onfocus="this.value = '';">
                 </div>
-                <div>
-                    <label for="laziScoreInput" class="block text-gray-700 text-sm font-bold mb-2">辣子:</label>
-                    <input type="number" id="laziScoreInput" value="100" min="0" 
+                <div class="flex-1 min-w-[calc(33%-1rem)]">
+                    <label for="laziScore" class="block text-gray-700 text-sm font-bold mb-2">辣子:</label>
+                    <input type="number" id="laziScore" value="100" min="0" 
                            class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200"
                            inputmode="numeric" pattern="[0-9]*" onfocus="this.value = '';">
                 </div>
             </div>
         </div>
 
-        <!-- 玩家管理 -->
+        <!-- 玩家管理区域 -->
         <div class="mb-6 bg-green-50 p-4 rounded-lg">
-            <h2 class="text-xl font-semibold mb-4 text-green-800">玩家管理</h2>
-            <div class="flex mb-4">
-                <input type="text" id="newPlayerNameInput" placeholder="输入玩家姓名" 
-                       class="shadow appearance-none border rounded-l-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-green-500 transition duration-200"
-                       onfocus="this.value = '';">
-                <button id="addPlayerBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-r-lg focus:outline-none focus:shadow-outline transition duration-200">
-                    添加
-                </button>
-            </div>
-            <div id="playerList" class="bg-white rounded-lg shadow-inner p-2 max-h-48 overflow-y-auto">
-                <!-- Player items will be dynamically added here -->
-                <p id="noPlayersMessage" class="text-gray-500 text-center py-4">暂无玩家，请添加。</p>
+            <h2 class="text-xl font-semibold mb-4 text-green-800">玩家管理 (名字字数最多2个字)</h2>
+            <p class="text-sm text-gray-500 mb-4">请填写玩家姓名，清空姓名即可恢复默认标签。</p>
+            <div id="playerListContainer" class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white">
+                <div id="playerLabels" class="flex justify-around gap-2 mb-2">
+                    <!-- 玩家标签 (东, 南, 西, 北...) 将在这里动态添加 -->
+                </div>
+                <div id="playerInputs" class="flex justify-around gap-2">
+                    <!-- 玩家姓名输入框将在这里动态添加 -->
+                </div>
             </div>
         </div>
 
         <!-- 开始记分按钮 -->
-        <button id="startScoringBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105">
+        <button id="startGameBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200 transform hover:scale-105">
             开始记分
         </button>
 
-        <!-- Message Box -->
+        <!-- 消息提示框 -->
         <div id="messageBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center" role="alert"></div>
-
-        <!-- Confirmation Modal -->
-        <div id="confirmationModal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3 id="confirmationModalTitle" class="text-2xl font-bold mb-4 text-gray-800 text-center"></h3>
-                <p id="confirmationModalMessage" class="text-gray-700 text-center mb-6"></p>
-                <div class="flex justify-center space-x-4">
-                    <button id="confirmYesBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">是</button>
-                    <button id="confirmNoBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">否</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
-        // Get DOM elements
-        const baseScoreInput = document.getElementById('baseScoreInput');
-        const flowerScoreInput = document.getElementById('flowerScoreInput');
-        const laziScoreInput = document.getElementById('laziScoreInput');
-        const newPlayerNameInput = document.getElementById('newPlayerNameInput');
-        const addPlayerBtn = document.getElementById('addPlayerBtn');
-        const playerList = document.getElementById('playerList');
-        const noPlayersMessage = document.getElementById('noPlayersMessage');
-        const startScoringBtn = document.getElementById('startScoringBtn');
+        // 全局数据存储
+        let settings = {
+            baseScore: 5,   // 默认底分
+            flowerScore: 5, // 默认花分
+            laziScore: 100  // 默认辣子
+        };
+
+        // 这些是默认的玩家槽位标签
+        const DEFAULT_PLAYER_PLACEHOLDERS = ['东', '南', '西', '北', '中', '发', '白'];
+
+        // 这个数组将管理每个玩家输入槽位的状态
+        // 每个元素是 { id: string, defaultLabel: string, name: string }
+        // name 存储用户在输入框中填写的实际姓名，如果为空则使用 defaultLabel
+        let playerInputSlots = [];
+
+        // 获取 DOM 元素
+        const baseScoreInput = document.getElementById('baseScore');
+        const flowerScoreInput = document.getElementById('flowerScore');
+        const laziScoreInput = document.getElementById('laziScore');
+        const playerLabelsContainer = document.getElementById('playerLabels'); // 新增：玩家标签容器
+        const playerInputsContainer = document.getElementById('playerInputs'); // 新增：玩家输入框容器
+        const startGameBtn = document.getElementById('startGameBtn');
         const messageBox = document.getElementById('messageBox');
 
-        // Confirmation Modal elements
-        const confirmationModal = document.getElementById('confirmationModal');
-        const confirmationModalTitle = document.getElementById('confirmationModalTitle');
-        const confirmationModalMessage = document.getElementById('confirmationModalMessage');
-        const confirmYesBtn = document.getElementById('confirmYesBtn');
-        const confirmNoBtn = document.getElementById('confirmNoNoBtn'); // Corrected ID to avoid conflict
-
-        let activePlayers = []; // Stores the current list of players
-
-        // --- Message display function ---
+        // --- 消息提示函数 ---
         function showMessage(message, type = 'info') {
             messageBox.textContent = message;
             messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
@@ -149,190 +150,220 @@
             messageBox.classList.remove('hidden');
             setTimeout(() => {
                 messageBox.classList.add('hidden');
-            }, 3000); // Hide after 3 seconds
+            }, 3000); // 3秒后隐藏
         }
 
-        // --- Custom Confirmation Modal functions ---
-        let confirmPromiseResolve = null;
-
-        function showCustomConfirmation(title, message) {
-            return new Promise((resolve) => {
-                confirmationModalTitle.textContent = title;
-                confirmationModalMessage.textContent = message;
-                confirmationModal.classList.remove('hidden');
-                confirmPromiseResolve = resolve;
-
-                // Remove old listeners to prevent duplicates
-                confirmYesBtn.removeEventListener('click', handleConfirmYes);
-                confirmNoBtn.removeEventListener('click', handleConfirmNo);
-
-                // Add new listeners
-                confirmYesBtn.addEventListener('click', handleConfirmYes);
-                confirmNoBtn.addEventListener('click', handleConfirmNo);
-            });
-        }
-
-        function hideCustomConfirmation() {
-            confirmationModal.classList.add('hidden');
-            confirmPromiseResolve = null;
-        }
-
-        function handleConfirmYes() {
-            if (confirmPromiseResolve) {
-                confirmPromiseResolve(true);
-            }
-            hideCustomConfirmation();
-        }
-
-        function handleConfirmNo() {
-            if (confirmPromiseResolve) {
-                confirmPromiseResolve(false);
-            }
-            hideCustomConfirmation();
-        }
-
-        // --- Player Management Functions ---
-        function renderPlayers() {
-            playerList.innerHTML = ''; // Clear current list
-            if (activePlayers.length === 0) {
-                noPlayersMessage.classList.remove('hidden');
-                playerList.appendChild(noPlayersMessage);
-            } else {
-                noPlayersMessage.classList.add('hidden');
-                activePlayers.forEach((player, index) => {
-                    const playerDiv = document.createElement('div');
-                    playerDiv.className = 'player-list-item';
-                    playerDiv.innerHTML = `
-                        <span class="text-gray-700 text-lg">${player}</span>
-                        <button class="remove-player-btn bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md focus:outline-none focus:shadow-outline transition duration-200" data-player-index="${index}">删除</button>
-                    `;
-                    playerList.appendChild(playerDiv);
-                });
-                // Add event listeners to new remove buttons
-                document.querySelectorAll('.remove-player-btn').forEach(button => {
-                    button.addEventListener('click', removePlayer);
-                });
-            }
-        }
-
-        function addPlayer() {
-            const playerName = newPlayerNameInput.value.trim();
-            if (playerName) {
-                if (activePlayers.includes(playerName)) {
-                    showMessage('玩家姓名已存在！', 'error');
-                } else if (activePlayers.length >= 7) { // Limit to 7 players
-                    showMessage('最多只能添加7位玩家！', 'error');
-                }
-                else {
-                    activePlayers.push(playerName);
-                    newPlayerNameInput.value = ''; // Clear input
-                    renderPlayers();
-                    saveSettings(); // Save updated player list
-                    showMessage('玩家添加成功！', 'success');
-                }
-            } else {
-                showMessage('玩家姓名不能为空！', 'error');
-            }
-        }
-
-        function removePlayer(event) {
-            const indexToRemove = parseInt(event.target.dataset.playerIndex);
-            activePlayers.splice(indexToRemove, 1); // Remove player from array
-            renderPlayers();
-            saveSettings(); // Save updated player list
-            showMessage('玩家删除成功！', 'success');
-        }
-
-        // --- Save and Load Settings ---
-        function saveSettings() {
-            const settings = {
-                baseScore: parseInt(baseScoreInput.value) || 0,
-                flowerScore: parseInt(flowerScoreInput.value) || 0,
-                laziScore: parseInt(laziScoreInput.value) || 0
-            };
-            localStorage.setItem('gameSettings', JSON.stringify(settings));
-            localStorage.setItem('activePlayers', JSON.stringify(activePlayers));
-            console.log('Settings and players saved:', settings, activePlayers);
-        }
-
-        function loadSettings() {
-            const savedSettings = localStorage.getItem('gameSettings');
-            const savedPlayers = localStorage.getItem('activePlayers');
+        // --- 数据加载与保存 (使用 localStorage) ---
+        function loadData() {
+            const savedSettings = localStorage.getItem('mahjongSettings');
+            const savedPlayerInputSlots = localStorage.getItem('mahjongPlayerInputSlots');
 
             if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
+                settings = JSON.parse(savedSettings);
                 baseScoreInput.value = settings.baseScore;
                 flowerScoreInput.value = settings.flowerScore;
                 laziScoreInput.value = settings.laziScore;
             }
-            if (savedPlayers) {
-                activePlayers = JSON.parse(savedPlayers);
+
+            if (savedPlayerInputSlots) {
+                const loadedSlots = JSON.parse(savedPlayerInputSlots);
+                // 确保加载的槽位数量与默认数量一致，并填充或截断
+                playerInputSlots = DEFAULT_PLAYER_PLACEHOLDERS.map((defaultLabel, index) => {
+                    const loadedSlot = loadedSlots.find(s => s.defaultLabel === defaultLabel); // 尝试匹配默认标签
+                    if (loadedSlot) {
+                        return {
+                            id: loadedSlot.id || `default-${index}`, // 确保有ID
+                            defaultLabel: defaultLabel,
+                            name: loadedSlot.name || '' // 使用保存的名称，如果没有则为空
+                        };
+                    } else {
+                        return {
+                            id: `default-${index}`,
+                            defaultLabel: defaultLabel,
+                            name: ''
+                        };
+                    }
+                });
+            } else {
+                // 如果没有保存的玩家数据，则初始化为默认的7个玩家槽位
+                DEFAULT_PLAYER_PLACEHOLDERS.forEach((label, index) => {
+                    playerInputSlots.push({
+                        id: `default-${index}`, // 使用固定ID方便识别默认槽位
+                        defaultLabel: label,
+                        name: '' // 默认为空，等待用户输入
+                    });
+                });
             }
-            renderPlayers(); // Render players on load
+            renderPlayerInputs();
         }
 
-        // --- Start Scoring ---
-        async function startScoring() {
-            if (activePlayers.length < 2) {
-                showMessage('至少需要2位玩家才能开始记分！', 'error');
+        function saveData() {
+            localStorage.setItem('mahjongSettings', JSON.stringify(settings));
+            localStorage.setItem('mahjongPlayerInputSlots', JSON.stringify(playerInputSlots));
+        }
+
+        // --- 玩家输入框和标签渲染 ---
+        function renderPlayerInputs() {
+            playerLabelsContainer.innerHTML = ''; // 清空现有标签
+            playerInputsContainer.innerHTML = ''; // 清空现有输入框
+
+            playerInputSlots.forEach((slot) => {
+                // 创建标签
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'player-label flex-1';
+                labelDiv.textContent = slot.defaultLabel;
+                playerLabelsContainer.appendChild(labelDiv);
+
+                // 创建输入框
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'flex-1'; // Ensure input takes its share of space
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = slot.name || slot.defaultLabel; // 显示实际姓名或默认标签
+                nameInput.placeholder = '输入姓名'; // 占位符
+                nameInput.className = 'player-name-input shadow appearance-none border rounded-lg w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200';
+                nameInput.dataset.slotId = slot.id; // 存储槽位ID，方便事件处理
+                
+                // 根据玩家数量调整字体大小
+                if (playerInputSlots.length > 4) { // 假设超过4个玩家时开始缩小字体
+                    nameInput.classList.add('player-name-input-small');
+                    labelDiv.classList.add('player-name-input-small'); // Labels also need to shrink
+                } else {
+                    nameInput.classList.remove('player-name-input-small');
+                    labelDiv.classList.remove('player-name-input-small');
+                }
+
+                // 添加 focus 事件监听器，清空内容
+                nameInput.addEventListener('focus', (event) => {
+                    event.target.value = '';
+                });
+
+                // 添加 blur 事件监听器，处理保存和恢复默认标签
+                nameInput.addEventListener('blur', (event) => {
+                    const slotId = event.target.dataset.slotId;
+                    const slot = playerInputSlots.find(s => s.id === slotId);
+                    if (slot) {
+                        const newName = event.target.value.trim();
+                        if (newName === '') {
+                            // 如果清空，则恢复默认标签，并清空存储的实际名称
+                            slot.name = '';
+                            event.target.value = slot.defaultLabel;
+                            showMessage(`玩家 "${slot.defaultLabel}" 已清空`, 'info');
+                        } else {
+                            // 检查新名称是否与其他已填写的玩家姓名重复
+                            const currentFilledNames = new Set(
+                                playerInputSlots
+                                    .filter(s => s.id !== slot.id && s.name !== '')
+                                    .map(s => s.name)
+                            );
+                            if (currentFilledNames.has(newName)) {
+                                showMessage(`玩家姓名 "${newName}" 已存在！请使用其他名称。`, 'error');
+                                // 恢复到旧名称或默认标签
+                                event.target.value = slot.name || slot.defaultLabel;
+                            } else {
+                                // 限制名字长度为最多2个字
+                                if (newName.length > 2) {
+                                    showMessage('名字最多只能2个字！', 'error');
+                                    event.target.value = slot.name || slot.defaultLabel; // 恢复旧值
+                                    return;
+                                }
+                                slot.name = newName;
+                                showMessage(`玩家姓名已更新为 "${newName}"`, 'success');
+                            }
+                        }
+                        saveData();
+                    }
+                });
+
+                // 实时更新 slot.name
+                nameInput.addEventListener('input', (event) => {
+                    const slotId = event.target.dataset.slotId;
+                    const slot = playerInputSlots.find(s => s.id === slotId);
+                    if (slot) {
+                        // 实时更新 name，但不立即保存或处理重复，留给 blur 事件
+                        slot.name = event.target.value.trim();
+                    }
+                });
+
+                // 回车键触发 blur 事件
+                nameInput.addEventListener('keypress', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); // 阻止回车键换行
+                        event.target.blur(); // 触发失去焦点事件来保存
+                    }
+                });
+
+                inputDiv.appendChild(nameInput);
+                playerInputsContainer.appendChild(inputDiv);
+            });
+        }
+
+        // --- 事件监听器 ---
+
+        // 分值设置输入框变化时更新 settings 对象并保存
+        baseScoreInput.addEventListener('input', (e) => {
+            settings.baseScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+        flowerScoreInput.addEventListener('input', (e) => {
+            settings.flowerScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+        laziScoreInput.addEventListener('input', (e) => {
+            settings.laziScore = parseFloat(e.target.value) || 0;
+            saveData();
+        });
+
+        // 开始记分按钮点击事件
+        startGameBtn.addEventListener('click', () => {
+            // 收集所有已填写的、非空的、唯一的玩家姓名
+            const activePlayersForGame = [];
+            const collectedNames = new Set(); // 使用 Set 来确保唯一性
+
+            playerInputSlots.forEach(slot => {
+                const name = slot.name.trim();
+                // 如果用户输入了名字，则使用用户输入的；否则使用默认标签
+                const finalName = name || slot.defaultLabel;
+
+                // 检查最终确定的名字是否重复
+                if (finalName && !collectedNames.has(finalName)) {
+                    activePlayersForGame.push(finalName);
+                    collectedNames.add(finalName);
+                } else if (finalName && collectedNames.has(finalName)) {
+                    // 如果有重复，提示错误并阻止开始游戏
+                    showMessage(`玩家姓名 "${finalName}" 重复！请修改。`, 'error');
+                    return; // 阻止继续执行
+                }
+            });
+
+            if (activePlayersForGame.length < 2) {
+                showMessage('请至少添加2位玩家才能开始记分！', 'error');
                 return;
             }
 
-            // Check for an ongoing game
-            const inProgressGameId = localStorage.getItem('mahjongInProgressGameId');
-            if (inProgressGameId) {
-                const confirmNewGame = await showCustomConfirmation(
-                    '开始新牌局？',
-                    '检测到未完成的牌局，开始新牌局将放弃当前牌局。您确定要开始新牌局吗？'
-                );
-                if (!confirmNewGame) {
-                    return; // User cancelled
-                } else {
-                    // If user confirms new game, mark the old one as discarded
-                    let mahjongGameHistoryArchive = JSON.parse(localStorage.getItem('mahjongGameHistoryArchive') || '[]');
-                    const oldGameIndex = mahjongGameHistoryArchive.findIndex(game => game.id === parseInt(inProgressGameId));
-                    if (oldGameIndex !== -1) {
-                        mahjongGameHistoryArchive[oldGameIndex].status = 'discarded';
-                        localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive));
-                        localStorage.removeItem('mahjongInProgressGameId'); // Clear the in-progress flag
-                        showMessage('旧牌局已放弃，将开始新牌局。', 'info');
-                    }
-                }
-            }
+            // 将活跃玩家列表和设置保存到 localStorage，供记分页面使用
+            localStorage.setItem('activePlayers', JSON.stringify(activePlayersForGame));
+            localStorage.setItem('currentGameSettings', JSON.stringify(settings));
 
-            // Save current settings and players to localStorage for the scoring page
-            const currentSettings = {
-                baseScore: parseInt(baseScoreInput.value) || 0,
-                flowerScore: parseInt(flowerScoreInput.value) || 0,
-                laziScore: parseInt(laziScoreInput.value) || 0
-            };
-            localStorage.setItem('currentGameSettings', JSON.stringify(currentSettings));
-            localStorage.setItem('activePlayers', JSON.stringify(activePlayers)); // Save active players for scoring page
-
-            window.location.href = 'scoring.html'; // Navigate to scoring page
-        }
-
-        // --- Event Listeners ---
-        addPlayerBtn.addEventListener('click', addPlayer);
-        newPlayerNameInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                addPlayer();
-            }
+            // 跳转到记分页面
+            window.location.href = 'scoring.html';
         });
-        startScoringBtn.addEventListener('click', startScoring);
 
-        // Load settings when the page loads
-        window.onload = loadSettings;
+        // 页面加载时执行
+        window.onload = () => {
+            loadData(); // 加载之前保存的数据或初始化默认槽位
+        };
 
-        // --- Service Worker Registration (PWA Core) ---
+        // --- Service Worker 注册 (PWA 核心) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
+                // 确保 Service Worker 路径的正确性
                 navigator.serviceWorker.register('./service-worker.js')
                     .then(registration => {
-                        console.log('Service Worker registration successful:', registration);
+                        console.log('Service Worker 注册成功:', registration);
                     })
                     .catch(error => {
-                        console.error('Service Worker registration failed:', error);
+                        console.error('Service Worker 注册失败:', error);
                     });
             });
         }
