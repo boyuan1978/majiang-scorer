@@ -108,7 +108,7 @@
         <!-- 玩家管理区域 -->
         <div class="mb-6 bg-green-50 p-4 rounded-lg">
             <h2 class="text-xl font-semibold mb-4 text-green-800">玩家管理 (名字字数最多2个字)</h2>
-            <p class="text-sm text-gray-500 mb-4">请填写玩家姓名，清空姓名即可。</p>
+            <!-- Removed the instruction text below -->
             <div id="playerListContainer" class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white">
                 <div id="playerLabels" class="flex justify-around gap-2 mb-2">
                     <!-- 玩家标签 (东, 南, 西, 北...) 将在这里动态添加 -->
@@ -236,8 +236,9 @@
                 inputDiv.className = 'flex-1'; // Ensure input takes its share of space
                 const nameInput = document.createElement('input');
                 nameInput.type = 'text';
-                nameInput.value = slot.name; // 默认显示用户输入的姓名，如果为空则为空字符串
-                nameInput.placeholder = slot.defaultLabel; // 占位符显示默认标签
+                // MODIFICATION: Set value to empty string to ensure it's blank initially
+                nameInput.value = slot.name; // Keep this to load saved names
+                nameInput.placeholder = ''; // Set placeholder to empty string
                 nameInput.className = 'player-name-input shadow appearance-none border rounded-lg w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200';
                 nameInput.dataset.slotId = slot.id; // 存储槽位ID，方便事件处理
                 
