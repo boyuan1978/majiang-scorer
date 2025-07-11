@@ -71,9 +71,18 @@
             white-space: nowrap; /* Prevent text wrapping inside button */
             overflow: hidden; /* Hide overflow text */
             text-overflow: ellipsis; /* Show ellipsis for overflow text */
-            font-size: 0.875rem; /* text-sm */
-            padding: 0.5rem 0.75rem; /* py-2 px-3 */
+            font-size: 0.875rem; /* text-sm default */
+            padding: 0.5rem 0.2rem; /* py-2 px-3, reduced horizontal padding */
+            line-height: 1; /* Ensure single line height */
         }
+        /* Dynamic font size for player selection items based on count */
+        .player-selection-item.font-xs {
+            font-size: 0.75rem; /* text-xs */
+        }
+        .player-selection-item.font-xxs {
+            font-size: 0.65rem; /* Even smaller for more players */
+        }
+
         .player-selection-item.selected {
             background-color: #3B82F6; /* Tailwind blue-500 */
             color: white;
@@ -97,7 +106,7 @@
         .player-selection-container-flex {
             display: flex;
             flex-wrap: wrap; /* Allow items to wrap to the next line */
-            gap: 0.5rem; /* Space between items */
+            gap: 0.2rem; /* Reduced space between items */
             border: 1px solid #cbd5e0;
             border-radius: 0.5rem;
             padding: 0.5rem;
@@ -885,6 +894,14 @@
                 playerBtn.textContent = player;
                 playerBtn.dataset.playerName = player; // Store player name
 
+                // Dynamic font size adjustment for player selection buttons
+                if (playersToRender.length >= 6) { // If 6 or more players, make font smaller
+                    playerBtn.classList.add('font-xxs');
+                } else if (playersToRender.length >= 4) { // If 4 or more players, use slightly smaller font
+                    playerBtn.classList.add('font-xs');
+                }
+                // No else needed, default font-size is 0.875rem (text-sm)
+
                 playerBtn.addEventListener('click', (event) => {
                     if (currentScoreMode === 'zimo') { // Multi-select for Zimo
                         event.target.classList.toggle('selected');
@@ -928,6 +945,13 @@
                 playerBtn.className = 'player-selection-item bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-lg focus:outline-none focus:shadow-outline transition duration-200';
                 playerBtn.textContent = player;
                 playerBtn.dataset.playerName = player;
+
+                // Dynamic font size adjustment for player selection buttons
+                if (activePlayers.length >= 6) { // If 6 or more players, make font smaller
+                    playerBtn.classList.add('font-xxs');
+                } else if (activePlayers.length >= 4) { // If 4 or more players, use slightly smaller font
+                    playerBtn.classList.add('font-xs');
+                }
 
                 playerBtn.addEventListener('click', (event) => {
                     // Deselect all other "冲头" buttons
