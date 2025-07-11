@@ -1,13 +1,16 @@
 // service-worker.js
 // 每次更新文件后，请更改 CACHE_NAME 的版本号，以确保 Service Worker 更新缓存
-const CACHE_NAME = 'mahjong-scorer-cache-v61'; // 版本号已从 v39 更改为 v40
+const CACHE_NAME = 'mahjong-scorer-cache-v62'; // 版本号已从 v61 更改为 v62
+
 const urlsToCache = [
     '/',
     '/index.html',
     '/scoring.html', // Cache scoring page
-    // '/icons/icon-192x192.png', // Uncomment and add if you have icons
-    // '/icons/icon-512x512.png', // Uncomment and add if you have icons
-    // You might also need to cache Tailwind CSS CDN, but browsers usually cache it themselves
+    '/manifest.json', // 确保 manifest 文件也被缓存
+    '/icons/icon-192x192.png', // 取消注释：确保图标被缓存
+    '/icons/icon-512x512.png', // 取消注释：确保图标被缓存
+    // 如果您希望离线时也能加载 Tailwind CSS，可以将其 CDN 地址也加入缓存
+    'https://cdn.tailwindcss.com', 
 ];
 
 // Install Service Worker and cache all files
