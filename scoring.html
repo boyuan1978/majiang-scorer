@@ -65,22 +65,22 @@
             transition: background-color 0.2s, color 0.2s;
             border: 1px solid #cbd5e0; /* Add border for better visual separation */
             /* Added for compact display and dynamic sizing */
-            flex-grow: 1; /* Allow buttons to grow */
-            flex-shrink: 1; /* Allow buttons to shrink */
-            min-width: 0; /* Allow buttons to shrink below content size */
+            flex-grow: 0; /* Changed to 0 to prevent growing unnecessarily */
+            flex-shrink: 0; /* Changed to 0 to prevent shrinking below content */
+            min-width: 3.5rem; /* Min width to accommodate 2 characters + padding */
             white-space: nowrap; /* Prevent text wrapping inside button */
             overflow: hidden; /* Hide overflow text */
             text-overflow: ellipsis; /* Show ellipsis for overflow text */
-            font-size: 0.875rem; /* text-sm default */
-            padding: 0.5rem 0.2rem; /* py-2 px-3, reduced horizontal padding */
+            font-size: 0.8rem; /* Adjusted default font size */
+            padding: 0.4rem 0.2rem; /* Reduced padding for more text space */
             line-height: 1; /* Ensure single line height */
         }
         /* Dynamic font size for player selection items based on count */
         .player-selection-item.font-xs {
-            font-size: 0.75rem; /* text-xs */
+            font-size: 0.7rem; /* text-xs */
         }
         .player-selection-item.font-xxs {
-            font-size: 0.65rem; /* Even smaller for more players */
+            font-size: 0.6rem; /* Even smaller for more players */
         }
 
         .player-selection-item.selected {
@@ -105,12 +105,13 @@
         /* Specific style for player selection containers to allow wrapping */
         .player-selection-container-flex {
             display: flex;
-            flex-wrap: wrap; /* Allow items to wrap to the next line */
+            flex-wrap: nowrap; /* Changed to nowrap to keep items on one line */
             gap: 0.2rem; /* Reduced space between items */
             border: 1px solid #cbd5e0;
             border-radius: 0.5rem;
             padding: 0.5rem;
-            overflow-x: hidden; /* Hide horizontal scroll if items wrap */
+            overflow-x: auto; /* Allow horizontal scroll if items overflow */
+            justify-content: flex-start; /* Align items to the start when there's overflow */
         }
         .score-table td {
             vertical-align: middle; /* Center content vertically in table cells */
@@ -276,13 +277,13 @@
 
                         <!-- Fan Count Input -->
                         <div id="fanCountDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                            <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数 (原数*2**番数):</label>
+                            <label for="fanCount" class="block text-gray-700 text-sm font-bold mb-2">番数<br>(原数*2**番数):</label> <!-- Added <br> for line break -->
                             <input type="number" id="fanCount" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                         </div>
 
                         <!-- Multiplier Input -->
                         <div id="multiplierDiv" class="flex-1 min-w-[calc(33%-1rem)]">
-                            <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍 (原数*(倍数+1)):</label>
+                            <label for="multiplier" class="block text-gray-700 text-sm font-bold mb-2">翻倍<br>(原数*(倍数+1)):</label> <!-- Added <br> for line break -->
                             <input type="number" id="multiplier" value="0" min="0" class="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500 transition duration-200" onfocus="this.value = '';" inputmode="numeric" pattern="[0-9]*">
                         </div>
                     </div>
@@ -758,12 +759,33 @@
                     console.log('loadGameData: Resumed game. activePlayers after resume:', activePlayers);
                     showMessage('已恢复未完成的牌局。', 'success');
                 } else {
-                    // User chose not to resume, discard the game
-                    resumedGame.status = 'discarded'; // Mark as discarded
+                    // User chose not to resume, save the current state of the game as completed, then start new
+                    console.log('loadGameData: User chose NOT to resume. Saving old game as completed and starting new one.');
+                    
+                    // Find the game in the archive again (it might have been modified by reference)
+                    const gameToFinalizeIndex = mahjongGameHistoryArchive.findIndex(game => game.id === resumedGame.id);
+                    if (gameToFinalizeIndex !== -1) {
+                        const gameToFinalize = mahjongGameHistoryArchive[gameToFinalizeIndex];
+                        gameToFinalize.playerScores = { ...playerScores }; // Save current scores
+                        gameToFinalize.lastRoundChanges = { ...lastRoundChanges }; // Save last changes
+                        gameToFinalize.detailedHistory = [...gameRoundHistory]; // Save full history
+                        gameToFinalize.zimoCount = zimoCount;
+                        gameToFinalize.chongCount = chongCount;
+                        gameToFinalize.sihuaCount = sihuaCount;
+                        gameToFinalize.status = 'completed'; // Mark as completed
+                        gameToFinalize.timestamp = new Date().toISOString(); // Update timestamp to completion time
+                        gameToFinalize.finalScores = { ...playerScores }; // Set final scores
+                        gameToFinalize.roundsPlayed = gameRoundHistory.length; // Set rounds played
+                        console.log('loadGameData: Old in-progress game finalized in archive (in memory):', gameToFinalize);
+                    } else {
+                        console.error('loadGameData: Could not find game to finalize in archive after user chose not to resume.');
+                    }
+                    
                     localStorage.setItem('mahjongGameHistoryArchive', JSON.stringify(mahjongGameHistoryArchive)); // Persist status change
                     localStorage.removeItem('mahjongInProgressGameId'); // Clear in-progress flag
-                    console.log('loadGameData: In-progress game discarded and mahjongInProgressGameId cleared from localStorage.');
-                    showMessage('未完成的牌局已放弃。', 'info');
+                    console.log('loadGameData: Old in-progress game saved as COMPLETED and mahjongInProgressGameId cleared from localStorage.');
+                    showMessage('未完成的牌局已保存并放弃，已开始新牌局。', 'info');
+                    
                     // Now, start a brand new game
                     startNewGameFromIndexSettings();
                 }
@@ -900,7 +922,7 @@
                 } else if (playersToRender.length >= 4) { // If 4 or more players, use slightly smaller font
                     playerBtn.classList.add('font-xs');
                 }
-                // No else needed, default font-size is 0.875rem (text-sm)
+                // No else needed, default font-size is 0.8rem
 
                 playerBtn.addEventListener('click', (event) => {
                     if (currentScoreMode === 'zimo') { // Multi-select for Zimo
