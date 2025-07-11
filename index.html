@@ -52,13 +52,15 @@
         /* Player name input specific styles for dynamic font size */
         .player-name-input {
             text-align: center;
-            font-size: 1rem; /* Default font size */
+            font-size: 0.9rem; /* Slightly smaller default font size for better fit */
             min-width: 0; /* Allow shrinking */
             flex-grow: 1; /* Allow growing */
+            padding-left: 0.25rem; /* Reduced padding for more text space */
+            padding-right: 0.25rem; /* Reduced padding for more text space */
         }
-        /* Adjust font size for more players */
+        /* Adjust font size for more players - can be even smaller if needed */
         .player-name-input-small {
-            font-size: 0.8rem; /* Smaller font for more players */
+            font-size: 0.75rem; /* Even smaller font for more players */
         }
         /* Player label (东, 南, 西, 北) specific styles */
         .player-label {
@@ -70,7 +72,7 @@
             white-space: nowrap; /* Prevent wrapping */
             overflow: hidden; /* Hide overflow */
             text-overflow: ellipsis; /* Show ellipsis */
-            font-size: 0.9rem; /* Slightly smaller than default for labels */
+            font-size: 0.8rem; /* Slightly smaller than default for labels */
         }
     </style>
     <!-- PWA Manifest 文件 -->
@@ -266,7 +268,6 @@
                             // 如果清空，则清空存储的实际名称，输入框值也保持空
                             slot.name = '';
                             event.target.value = ''; // 保持空白
-                            // showMessage(`玩家 "${slot.defaultLabel}" 已清空`, 'info'); // Removed this message as per user request
                         } else {
                             // 检查新名称是否与其他已填写的玩家姓名重复
                             const currentFilledNames = new Set(
@@ -303,11 +304,19 @@
                     }
                 });
 
-                // 回车键触发 blur 事件
+                // 回车键触发 blur 事件并跳转到下一个输入框
                 nameInput.addEventListener('keypress', (event) => {
                     if (event.key === 'Enter') {
-                        event.preventDefault(); // 阻止回车键换行
-                        event.target.blur(); // 触发失去焦点事件来保存
+                        event.preventDefault(); // 阻止回车键默认行为 (如提交表单或换行)
+                        const inputs = Array.from(playerInputsContainer.querySelectorAll('.player-name-input'));
+                        const currentIndex = inputs.indexOf(event.target);
+                        if (currentIndex > -1 && currentIndex < inputs.length - 1) {
+                            // 聚焦到下一个输入框
+                            inputs[currentIndex + 1].focus();
+                        } else {
+                            // 如果是最后一个输入框，则失去焦点
+                            event.target.blur();
+                        }
                     }
                 });
 
